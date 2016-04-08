@@ -517,33 +517,33 @@ void LoadDBCStores(const std::string& dataPath)
         exit(1);
     }
 
-    sLog.outString();
     sLog.outString(">> Initialized %d data stores", DBCFilesCount);
+    sLog.outString();
 }
 
 SimpleFactionsList const* GetFactionTeamList(uint32 faction)
 {
     FactionTeamMap::const_iterator itr = sFactionTeamMap.find(faction);
     if (itr == sFactionTeamMap.end())
-        return NULL;
+        return nullptr;
     return &itr->second;
 }
 
 char const* GetPetName(uint32 petfamily, uint32 dbclang)
 {
     if (!petfamily)
-        return NULL;
+        return nullptr;
     CreatureFamilyEntry const* pet_family = sCreatureFamilyStore.LookupEntry(petfamily);
     if (!pet_family)
-        return NULL;
-    return pet_family->Name[dbclang] ? pet_family->Name[dbclang] : NULL;
+        return nullptr;
+    return pet_family->Name[dbclang] ? pet_family->Name[dbclang] : nullptr;
 }
 
 TalentSpellPos const* GetTalentSpellPos(uint32 spellId)
 {
     TalentSpellPosMap::const_iterator itr = sTalentSpellPosMap.find(spellId);
     if (itr == sTalentSpellPosMap.end())
-        return NULL;
+        return nullptr;
 
     return &itr->second;
 }
@@ -574,7 +574,7 @@ WMOAreaTableEntry const* GetWMOAreaTableEntryByTripple(int32 rootid, int32 adtid
 {
     WMOAreaInfoByTripple::iterator i = sWMOAreaInfoByTripple.find(WMOAreaTableTripple(rootid, adtid, groupid));
     if (i == sWMOAreaInfoByTripple.end())
-        return NULL;
+        return nullptr;
     return i->second;
 }
 
@@ -586,18 +586,21 @@ AreaTableEntry const* GetAreaEntryByAreaID(uint32 area_id)
 AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_id)
 {
     // 1.12.1 areatable have duplicates for areaflag
-    AreaTableEntry const* aEntry = NULL;
-    for (uint32 i = 0 ; i <= sAreaStore.GetNumRows() ; i++)
+    AreaTableEntry const* aEntry = nullptr;
+    for (uint32 i = 0; i <= sAreaStore.GetNumRows(); i++)
     {
-        if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
+        if (area_flag != 0)
         {
-            if (AreaEntry->exploreFlag == area_flag)
+            if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
             {
-                // area_flag found but it lets test map_id too
-                if (AreaEntry->mapid == map_id)
-                    return AreaEntry; // area_flag and map_id are ok so we can return value
-                // not same map_id so we store this entry and continue searching another better one
-                aEntry = AreaEntry;
+                if (AreaEntry->exploreFlag == area_flag)
+                {
+                    // area_flag found but it lets test map_id too
+                    if (AreaEntry->mapid == map_id)
+                        return AreaEntry; // area_flag and map_id are ok so we can return value
+                    // not same map_id so we store this entry and continue searching another better one
+                    aEntry = AreaEntry;
+                }
             }
         }
     }
@@ -608,7 +611,7 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
         return GetAreaEntryByAreaID(mapEntry->linked_zone);
 
-    return NULL;
+    return nullptr;
 }
 
 uint32 GetAreaFlagByMapId(uint32 mapid)
@@ -630,8 +633,31 @@ ChatChannelsEntry const* GetChannelEntryFor(uint32 channel_id)
         if (ch && ch->ChannelID == channel_id)
             return ch;
     }
-    return NULL;
+    return nullptr;
 }
+
+ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
+{
+    // not sorted, numbering index from 0
+    for (uint32 i = 0; i < sChatChannelsStore.GetNumRows(); ++i)
+    {
+        ChatChannelsEntry const* ch = sChatChannelsStore.LookupEntry(i);
+        if (ch)
+        {
+            // need to remove %s from entryName if it exists before we match
+            std::string entryName(ch->pattern[0]);
+            std::size_t removeString = entryName.find("%s");
+
+            if (removeString != std::string::npos)
+                entryName.replace(removeString, 2, "");
+
+            if (name.find(entryName) != std::string::npos)
+                return ch;
+        }
+    }
+    return nullptr;
+}
+
 /*[-ZERO]
 bool IsTotemCategoryCompatiableWith(uint32 itemTotemCategoryId, uint32 requiredTotemCategoryId)
 {

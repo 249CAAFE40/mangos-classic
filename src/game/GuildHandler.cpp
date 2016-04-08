@@ -69,7 +69,7 @@ void WorldSession::HandleGuildInviteOpcode(WorldPacket& recvPacket)
     DEBUG_LOG("WORLD: Received opcode CMSG_GUILD_INVITE");
 
     std::string Invitedname, plname;
-    Player* player = NULL;
+    Player* player = nullptr;
 
     recvPacket >> Invitedname;
 
@@ -482,7 +482,7 @@ void WorldSession::HandleGuildMOTDOpcode(WorldPacket& recvPacket)
     if (!recvPacket.empty())
         recvPacket >> MOTD;
     else
-        MOTD = "";
+        MOTD.clear();
 
     Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
     if (!guild)

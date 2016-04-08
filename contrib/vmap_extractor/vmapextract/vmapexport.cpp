@@ -76,7 +76,7 @@ bool preciseVectorData = false;
 
 //static const char * szWorkDirMaps = ".\\Maps";
 const char* szWorkDirWmo = "./Buildings";
-const char* szRawVMAPMagic = "VMAPz04";
+const char* szRawVMAPMagic = "VMAP005";
 
 // Local testing functions
 
@@ -303,7 +303,7 @@ bool scan_patches(char* scanmatch, std::vector<std::string>& pArchiveNames)
         }
     }
 
-    return(true);
+    return (true);
 }
 
 bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
@@ -317,24 +317,23 @@ bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
 
     // open expansion and common files
     printf("Opening data files from data directory.\n");
-    sprintf(path, "%sterrain.mpq", input_path);
+    sprintf(path, "%sterrain.MPQ", input_path);
     pArchiveNames.push_back(path);
-    sprintf(path, "%smodel.mpq", input_path);
+    sprintf(path, "%smodel.MPQ", input_path);
     pArchiveNames.push_back(path);
+    sprintf(path, "%stexture.MPQ", input_path);
     pArchiveNames.push_back(path);
-	sprintf(path, "%stexture.mpq", input_path);
+    sprintf(path, "%swmo.MPQ", input_path);
     pArchiveNames.push_back(path);
-	sprintf(path, "%swmo.mpq", input_path);
+    sprintf(path, "%sbase.MPQ", input_path);
     pArchiveNames.push_back(path);
-	sprintf(path, "%sbase.mpq", input_path);
-    pArchiveNames.push_back(path);
-    sprintf(path, "%smisc.mpq", input_path);
+    sprintf(path, "%smisc.MPQ", input_path);
 
     // now, scan for the patch levels in the core dir
     printf("Scanning patch levels from data directory.\n");
     sprintf(path, "%spatch", input_path);
     if (!scan_patches(path, pArchiveNames))
-        return(false);
+        return (false);
 
     printf("\n");
 

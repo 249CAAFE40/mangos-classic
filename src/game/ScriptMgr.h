@@ -23,7 +23,8 @@
 #include "Policies/Singleton.h"
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
-#include "ace/Atomic_Op.h"
+
+#include <atomic>
 
 struct AreaTriggerEntry;
 struct SpellEntry;
@@ -64,6 +65,7 @@ enum ScriptCommand                                          // resSource, resTar
     SCRIPT_COMMAND_REMOVE_AURA              = 14,           // resSource = Unit, datalong = spell_id
     SCRIPT_COMMAND_CAST_SPELL               = 15,           // resSource = Unit, cast spell at resTarget = Unit
                                                             // datalong=spellid
+                                                            // dataint1-4 optional for random selected spell
                                                             // data_flags &  SCRIPT_FLAG_COMMAND_ADDITIONAL = cast triggered
     SCRIPT_COMMAND_PLAY_SOUND               = 16,           // resSource = WorldObject, target=any/player, datalong (sound_id), datalong2 (bitmask: 0/1=target-player, 0/2=with distance dependent, 0/4=map wide, 0/8=zone wide; so 1|2 = 3 is target with distance dependent)
     SCRIPT_COMMAND_CREATE_ITEM              = 17,           // source or target must be player, datalong = item entry, datalong2 = amount
@@ -100,9 +102,34 @@ enum ScriptCommand                                          // resSource, resTar
     SCRIPT_COMMAND_RESERVED_1               = 33,           // reserved for 3.x and later
     SCRIPT_COMMAND_TERMINATE_COND           = 34,           // datalong = condition_id, datalong2 = if != 0 then quest_id of quest that will be failed for player's group if the script is terminated
                                                             // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL terminate when condition is false ELSE terminate when condition is true
+    SCRIPT_COMMAND_SEND_AI_EVENT            = 35,           // resSource = Creature, resTarget = Unit
+                                                            // datalong = AIEventType
+                                                            // datalong2 = radius. If radius isn't provided and the target is a creature, then send AIEvent to target
+    SCRIPT_COMMAND_SET_FACING               = 36,           // resSource = Creature, resTarget WorldObject. Turn resSource towards Taget
+                                                            // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL also set TargetGuid of resSource to resTarget. In this case resTarget MUST be Creature/ Player
+                                                            // datalong != 0 Reset TargetGuid, Reset orientation
+    SCRIPT_COMMAND_MOVE_DYNAMIC             = 37,           // resSource = Creature, resTarget Worldobject.
+                                                            // datalong = 0: Move resSource towards resTarget
+                                                            // datalong != 0: Move resSource to a random point between datalong2..datalong around resTarget.
+                                                            //      orientation != 0: Obtain a random point around resTarget in direction of orientation
+                                                            // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a random point around resTarget in direction of resTarget->GetOrientation + orientation
+                                                            // for resTarget == resSource and orientation == 0 this will mean resSource moving forward
+    SCRIPT_COMMAND_SEND_MAIL                = 38,           // resSource WorldObject, can be nullptr, resTarget Player
+                                                            // datalong: Send mailTemplateId from resSource (if provided) to player resTarget
+                                                            // datalong2: AlternativeSenderEntry. Use as sender-Entry
+                                                            // dataint1: Delay (>= 0) in Seconds
+    SCRIPT_COMMAND_SET_FLY                  = 39,           // resSource = Creature
+                                                            // datalong = bool 0=off, 1=on
+                                                            // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL set/unset byte flag UNIT_BYTE1_FLAG_ALWAYS_STAND
+    SCRIPT_COMMAND_DESPAWN_GO               = 40,           // resTarget = GameObject
+    SCRIPT_COMMAND_RESPAWN                  = 41,           // resSource = Creature. Requires SCRIPT_FLAG_BUDDY_IS_DESPAWNED to find dead or despawned targets
+    SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS      = 42,           // resSource = Creature
+                                                            // datalong = resetDefault: bool 0=false, 1=true
+                                                            // dataint = main hand slot; dataint2 = off hand slot; dataint3 = ranged slot
+    SCRIPT_COMMAND_RESET_GO                 = 43,           // resTarget = GameObject
 };
 
-#define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK
+#define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
 
 enum ScriptInfoDataFlags
 {
@@ -113,8 +140,9 @@ enum ScriptInfoDataFlags
     SCRIPT_FLAG_COMMAND_ADDITIONAL          = 0x08,         // command dependend
     SCRIPT_FLAG_BUDDY_BY_GUID               = 0x10,         // take the buddy by guid
     SCRIPT_FLAG_BUDDY_IS_PET                = 0x20,         // buddy is a pet
+    SCRIPT_FLAG_BUDDY_IS_DESPAWNED          = 0X40,         // buddy is dead or despawned
 };
-#define MAX_SCRIPT_FLAG_VALID               (2 * SCRIPT_FLAG_BUDDY_IS_PET - 1)
+#define MAX_SCRIPT_FLAG_VALID               (2 * SCRIPT_FLAG_BUDDY_IS_DESPAWNED - 1)
 
 struct ScriptInfo
 {
@@ -317,6 +345,47 @@ struct ScriptInfo
             uint32 failQuest;                               // datalong2
         } terminateCond;
 
+        struct                                              // SCRIPT_COMMAND_SEND_AI_EVENT_AROUND (35)
+        {
+            uint32 eventType;                               // datalong
+            uint32 radius;                                  // datalong2
+        } sendAIEvent;
+
+        struct                                              // SCRIPT_COMMAND_SET_FACING (36)
+        {
+            uint32 resetFacing;                             // datalong
+            uint32 empty;                                   // datalong2
+        } setFacing;
+
+        struct                                              // SCRIPT_COMMAND_MOVE_DYNAMIC (37)
+        {
+            uint32 maxDist;                                 // datalong
+            uint32 minDist;                                 // datalong2
+        } moveDynamic;
+
+        struct                                              // SCRIPT_COMMAND_SEND_MAIL (38)
+        {
+            uint32 mailTemplateId;                          // datalong
+            uint32 altSender;                               // datalong2;
+        } sendMail;
+
+        struct                                              // SCRIPT_COMMAND_SET_FLY (39)
+        {
+            uint32 fly;                                     // datalong
+            uint32 empty;                                   // datalong2
+        } fly;
+
+        // datalong unsed                                   // SCRIPT_COMMAND_DESPAWN_GO (40)
+        // datalong unsed                                   // SCRIPT_COMMAND_RESPAWN (41)
+
+        struct                                              // SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS (42)
+        {
+            uint32 resetDefault;                            // datalong
+            uint32 empty;                                   // datalong2
+        } setEquipment;
+
+        // datalong unsed                                   // SCRIPT_COMMAND_RESET_GO (43)
+
         struct
         {
             uint32 data[2];
@@ -359,6 +428,8 @@ struct ScriptInfo
             case SCRIPT_COMMAND_CLOSE_DOOR:
             case SCRIPT_COMMAND_ACTIVATE_OBJECT:
             case SCRIPT_COMMAND_GO_LOCK_STATE:
+            case SCRIPT_COMMAND_DESPAWN_GO:
+            case SCRIPT_COMMAND_RESET_GO:
                 return false;
             default:
                 return true;
@@ -377,6 +448,9 @@ struct ScriptInfo
             case SCRIPT_COMMAND_MOUNT_TO_ENTRY_OR_MODEL:
             case SCRIPT_COMMAND_TERMINATE_SCRIPT:
             case SCRIPT_COMMAND_TERMINATE_COND:
+            case SCRIPT_COMMAND_SET_FACING:
+            case SCRIPT_COMMAND_MOVE_DYNAMIC:
+            case SCRIPT_COMMAND_SET_FLY:
                 return true;
             default:
                 return false;
@@ -421,6 +495,7 @@ class ScriptAction
         bool LogIfNotCreature(WorldObject* pWorldObject);
         bool LogIfNotUnit(WorldObject* pWorldObject);
         bool LogIfNotGameObject(WorldObject* pWorldObject);
+        bool LogIfNotPlayer(WorldObject* pWorldObject);
         Player* GetPlayerTargetOrSourceAndLog(WorldObject* pSource, WorldObject* pTarget);
 };
 
@@ -477,7 +552,7 @@ class ScriptMgr
 
         ScriptLoadResult LoadScriptLibrary(const char* libName);
         void UnloadScriptLibrary();
-        bool IsScriptLibraryLoaded() const { return m_hScriptLib != NULL; }
+        bool IsScriptLibraryLoaded() const { return m_hScriptLib != nullptr; }
 
         uint32 IncreaseScheduledScriptsCount() { return (uint32)++m_scheduledScripts; }
         uint32 DecreaseScheduledScriptCount() { return (uint32)--m_scheduledScripts; }
@@ -488,7 +563,6 @@ class ScriptMgr
         CreatureAI* GetCreatureAI(Creature* pCreature);
         InstanceData* CreateInstanceData(Map* pMap);
 
-        char const* GetScriptLibraryVersion() const;
         bool OnGossipHello(Player* pPlayer, Creature* pCreature);
         bool OnGossipHello(Player* pPlayer, GameObject* pGameObject);
         bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action, const char* code);
@@ -522,8 +596,8 @@ class ScriptMgr
         }
 
         typedef std::vector<std::string> ScriptNameMap;
-        typedef UNORDERED_MAP<uint32, uint32> AreaTriggerScriptMap;
-        typedef UNORDERED_MAP<uint32, uint32> EventIdScriptMap;
+        typedef std::unordered_map<uint32, uint32> AreaTriggerScriptMap;
+        typedef std::unordered_map<uint32, uint32> EventIdScriptMap;
 
         AreaTriggerScriptMap    m_AreaTriggerScripts;
         EventIdScriptMap        m_EventIdScripts;
@@ -532,11 +606,10 @@ class ScriptMgr
         MANGOS_LIBRARY_HANDLE   m_hScriptLib;
 
         // atomic op counter for active scripts amount
-        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
+        std::atomic_long m_scheduledScripts;
 
         void (MANGOS_IMPORT* m_pOnInitScriptLibrary)();
         void (MANGOS_IMPORT* m_pOnFreeScriptLibrary)();
-        const char* (MANGOS_IMPORT* m_pGetScriptLibraryVersion)();
 
         CreatureAI* (MANGOS_IMPORT* m_pGetCreatureAI)(Creature*);
         InstanceData* (MANGOS_IMPORT* m_pCreateInstanceData)(Map*);
@@ -566,7 +639,7 @@ class ScriptMgr
 };
 
 // Starters for events
-bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool isStart = true, Unit* forwardToPvp = NULL);
+bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool isStart = true, Unit* forwardToPvp = nullptr);
 
 #define sScriptMgr MaNGOS::Singleton<ScriptMgr>::Instance()
 
@@ -575,5 +648,7 @@ MANGOS_DLL_SPEC uint32 GetEventIdScriptId(uint32 eventId);
 MANGOS_DLL_SPEC uint32 GetScriptId(const char* name);
 MANGOS_DLL_SPEC char const* GetScriptName(uint32 id);
 MANGOS_DLL_SPEC uint32 GetScriptIdsCount();
+MANGOS_DLL_SPEC void SetExternalWaypointTable(char const* tableName);
+MANGOS_DLL_SPEC bool AddWaypointFromExternal(uint32 entry, int32 pathId, uint32 pointId, float x, float y, float z, float o, uint32 waittime);
 
 #endif

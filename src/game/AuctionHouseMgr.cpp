@@ -258,7 +258,6 @@ void AuctionHouseMgr::LoadAuctionItems()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded 0 auction items");
         return;
     }
@@ -298,8 +297,8 @@ void AuctionHouseMgr::LoadAuctionItems()
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u auction items", count);
+    sLog.outString();
 }
 
 void AuctionHouseMgr::LoadAuctions()
@@ -309,7 +308,6 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }
@@ -322,7 +320,6 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }
@@ -333,7 +330,6 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }
@@ -361,7 +357,7 @@ void AuctionHouseMgr::LoadAuctions()
         auction->startbid = fields[11].GetUInt32();
         auction->deposit = fields[12].GetUInt32();
 
-        auction->auctionHouseEntry = NULL;                  // init later
+        auction->auctionHouseEntry = nullptr;                  // init later
 
         // check if sold item exists for guid
         // and item_template in fact (GetAItem will fail if problematic in result check in AuctionHouseMgr::LoadAuctionItems)
@@ -421,8 +417,8 @@ void AuctionHouseMgr::LoadAuctions()
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u auctions", AuctionCount);
+    sLog.outString();
 }
 
 void AuctionHouseMgr::AddAItem(Item* it)
@@ -529,27 +525,28 @@ void AuctionHouseObject::Update()
 {
     time_t curTime = sWorld.GetGameTime();
     ///- Handle expired auctions
-    for (AuctionEntryMap::iterator itr = AuctionsMap.begin(); itr != AuctionsMap.end(); )
+    for (AuctionEntryMap::iterator itr = AuctionsMap.begin(); itr != AuctionsMap.end();)
     {
-        if (curTime > itr->second->expireTime)
+        if (curTime < itr->second->expireTime)
         {
-            ///- perform the transaction if there was bidder
-            if (itr->second->bid)
-                itr->second->AuctionBidWinning();
-            ///- cancel the auction if there was no bidder and clear the auction
-            else
-            {
-                sAuctionMgr.SendAuctionExpiredMail(itr->second);
-
-                itr->second->DeleteFromDB();
-                sAuctionMgr.RemoveAItem(itr->second->itemGuidLow);
-                delete itr->second;
-                AuctionsMap.erase(itr++);
-                continue;
-            }
+            itr++;
+            continue;
         }
 
-        ++itr;
+        ///- perform the transaction if there was bidder.  this will alyways have the side effect of
+        ///- removing the auction from the collection.  therefore we must increment the iterator here.
+        if (itr->second->bid)
+            (itr++)->second->AuctionBidWinning();
+        ///- cancel the auction if there was no bidder and clear the auction
+        else
+        {
+            sAuctionMgr.SendAuctionExpiredMail(itr->second);
+
+            itr->second->DeleteFromDB();
+            sAuctionMgr.RemoveAItem(itr->second->itemGuidLow);
+            delete itr->second;
+            AuctionsMap.erase(itr++);
+        }
     }
 }
 
@@ -645,7 +642,7 @@ void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player
     }
 }
 
-AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/)
+AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= nullptr*/)
 {
     uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
 
@@ -660,7 +657,7 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
     AH->bidder = 0;
     AH->bid = 0;
     AH->buyout = buyout;
-    AH->expireTime = time(NULL) + auction_time;
+    AH->expireTime = time(nullptr) + auction_time;
     AH->deposit = deposit;
     AH->auctionHouseEntry = auctionHouseEntry;
 
@@ -715,7 +712,7 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     data << uint32(startbid);                               // Auction->startbid (not sure if useful)
     data << uint32(bid ? GetAuctionOutBid() : 0);           // minimal outbid
     data << uint32(buyout);                                 // auction->buyout
-    data << uint32((expireTime - time(NULL))*IN_MILLISECONDS); // time left
+    data << uint32((expireTime - time(nullptr))*IN_MILLISECONDS); // time left
     data << ObjectGuid(HIGHGUID_PLAYER, bidder);            // auction->bidder current
     data << uint32(bid);                                    // current bid
     return true;
@@ -766,9 +763,9 @@ void AuctionEntry::AuctionBidWinning(Player* newbidder)
     delete this;
 }
 
-bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
+bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=nullptr*/)
 {
-    Player* auction_owner = owner ? sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, owner)) : NULL;
+    Player* auction_owner = owner ? sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, owner)) : nullptr;
 
     // bid can't be greater buyout
     if (buyout && newbid > buyout)

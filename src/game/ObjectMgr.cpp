@@ -45,8 +45,13 @@
 #include "Mail.h"
 #include "Formulas.h"
 #include "InstanceData.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
+#include "CellImpl.h"
 
 #include <limits>
+#include "ItemEnchantmentMgr.h"
+#include "LootMgr.h"
 
 INSTANTIATE_SINGLETON_1(ObjectMgr);
 
@@ -98,7 +103,7 @@ LanguageDesc const* GetLanguageDescByID(uint32 lang)
             return &lang_description[i];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 template<typename T>
@@ -164,7 +169,7 @@ Group* ObjectMgr::GetGroupById(uint32 id) const
     if (itr != mGroupMap.end())
         return itr->second;
 
-    return NULL;
+    return nullptr;
 }
 
 void ObjectMgr::LoadCreatureLocales()
@@ -176,10 +181,7 @@ void ObjectMgr::LoadCreatureLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 creature locale strings. DB table `locales_creature` is empty.");
         return;
     }
@@ -233,8 +235,8 @@ void ObjectMgr::LoadCreatureLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " creature locale strings", mCreatureLocaleMap.size());
+    sLog.outString();
 }
 
 void ObjectMgr::LoadGossipMenuItemsLocales()
@@ -251,10 +253,7 @@ void ObjectMgr::LoadGossipMenuItemsLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 gossip_menu_option locale strings. DB table `locales_gossip_menu_option` is empty.");
         return;
     }
@@ -324,8 +323,8 @@ void ObjectMgr::LoadGossipMenuItemsLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " gossip_menu_option locale strings", mGossipMenuItemsLocaleMap.size());
+    sLog.outString();
 }
 
 void ObjectMgr::LoadPointOfInterestLocales()
@@ -337,10 +336,7 @@ void ObjectMgr::LoadPointOfInterestLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 points_of_interest locale strings. DB table `locales_points_of_interest` is empty.");
         return;
     }
@@ -382,8 +378,8 @@ void ObjectMgr::LoadPointOfInterestLocales()
 
     delete result;
 
+    sLog.outString(">> Loaded " SIZEFMTD " points_of_interest locale strings", mPointOfInterestLocaleMap.size());
     sLog.outString();
-    sLog.outString(">> Loaded %u points_of_interest locale strings", mPointOfInterestLocaleMap.size());
 }
 
 struct SQLCreatureLoader : public SQLStorageLoaderBase<SQLCreatureLoader, SQLStorage>
@@ -399,9 +395,6 @@ void ObjectMgr::LoadCreatureTemplates()
 {
     SQLCreatureLoader loader;
     loader.Load(sCreatureStorage);
-
-    sLog.outString(">> Loaded %u creature definitions", sCreatureStorage.GetRecordCount());
-    sLog.outString();
 
     // check data correctness
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
@@ -431,7 +424,7 @@ void ObjectMgr::LoadCreatureTemplates()
         }
 
         // used later for scale
-        CreatureDisplayInfoEntry const* displayScaleEntry = NULL;
+        CreatureDisplayInfoEntry const* displayScaleEntry = nullptr;
 
         for (int i = 0; i < MAX_CREATURE_MODEL; ++i)
         {
@@ -566,6 +559,9 @@ void ObjectMgr::LoadCreatureTemplates()
                 const_cast<CreatureInfo*>(cInfo)->Scale = DEFAULT_OBJECT_SCALE;
         }
     }
+
+    sLog.outString(">> Loaded %u creature definitions", sCreatureStorage.GetRecordCount());
+    sLog.outString();
 }
 
 void ObjectMgr::ConvertCreatureAddonAuras(CreatureDataAddon* addon, char const* table, char const* guidEntryStr)
@@ -595,7 +591,7 @@ void ObjectMgr::ConvertCreatureAddonAuras(CreatureDataAddon* addon, char const* 
     // empty list
     if (val.empty())
     {
-        addon->auras = NULL;
+        addon->auras = nullptr;
         return;
     }
 
@@ -646,9 +642,6 @@ void ObjectMgr::LoadCreatureAddons(SQLStorage& creatureaddons, char const* entry
 {
     creatureaddons.Load();
 
-    sLog.outString(">> Loaded %u %s", creatureaddons.GetRecordCount(), comment);
-    sLog.outString();
-
     // check data correctness and convert 'auras'
     for (uint32 i = 1; i < creatureaddons.GetMaxEntry(); ++i)
     {
@@ -676,6 +669,8 @@ void ObjectMgr::LoadCreatureAddons(SQLStorage& creatureaddons, char const* entry
 
         ConvertCreatureAddonAuras(const_cast<CreatureDataAddon*>(addon), creatureaddons.GetTableName(), entryName);
     }
+
+    sLog.outString(">> Loaded %u %s", creatureaddons.GetRecordCount(), comment);
 }
 
 void ObjectMgr::LoadCreatureAddons()
@@ -710,11 +705,9 @@ void ObjectMgr::LoadCreatureClassLvlStats()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb("DB table `creature_template_classlevelstats` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -741,7 +734,7 @@ void ObjectMgr::LoadCreatureClassLvlStats()
             continue;
         }
 
-        CreatureClassLvlStats &cCLS = m_creatureClassLvlStats[creatureLevel][classToIndex[creatureClass]];
+        CreatureClassLvlStats& cCLS = m_creatureClassLvlStats[creatureLevel][classToIndex[creatureClass]];
 
         cCLS.BaseMana               = fields[2].GetUInt32();
         cCLS.BaseMeleeAttackPower   = fields[3].GetFloat();
@@ -756,8 +749,8 @@ void ObjectMgr::LoadCreatureClassLvlStats()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Found %u creature stats definitions.", storedRow);
+    sLog.outString();
 }
 
 CreatureClassLvlStats const* ObjectMgr::GetCreatureClassLvlStats(uint32 level, uint32 unitClass) const
@@ -767,7 +760,7 @@ CreatureClassLvlStats const* ObjectMgr::GetCreatureClassLvlStats(uint32 level, u
     if (cCLS->BaseHealth != 0 && cCLS->BaseDamage > 0.1f)
         return cCLS;
 
-    return NULL;
+    return nullptr;
 }
 
 void ObjectMgr::LoadEquipmentTemplates()
@@ -837,7 +830,7 @@ CreatureModelInfo const* ObjectMgr::GetCreatureModelRandomGender(uint32 display_
 {
     CreatureModelInfo const* minfo = GetCreatureModelInfo(display_id);
     if (!minfo)
-        return NULL;
+        return nullptr;
 
     // If a model for another gender exists, 50% chance to use it
     if (minfo->modelid_other_gender != 0 && urand(0, 1) == 0)
@@ -984,11 +977,9 @@ void ObjectMgr::LoadCreatures()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded 0 creature. DB table `creature` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -1054,29 +1045,29 @@ void ObjectMgr::LoadCreatures()
             }
         }
 
-        if (cInfo->RegenerateHealth && data.curhealth < cInfo->MinLevelHealth)
+        if (cInfo->RegenerateStats & REGEN_FLAG_HEALTH && data.curhealth < cInfo->MinLevelHealth)
         {
-            sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`RegenHealth`=1 and low current health (%u), `creature_template`.`minhealth`=%u.", guid, data.id, data.curhealth, cInfo->MinLevelHealth);
+            sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`RegenerateStats` & REGEN_FLAG_HEALTH and low current health (%u), `creature_template`.`MinLevelHealth`=%u.", guid, data.id, data.curhealth, cInfo->MinLevelHealth);
             data.curhealth = cInfo->MinLevelHealth;
         }
 
         if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_INSTANCE_BIND)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
-                sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`flags_extra` including CREATURE_EXTRA_FLAG_INSTANCE_BIND (%u) but creature are not in instance.",
+                sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_INSTANCE_BIND (%u) but creature are not in instance.",
                                 guid, data.id, CREATURE_EXTRA_FLAG_INSTANCE_BIND);
         }
 
         if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_AGGRO_ZONE)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
-                sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`flags_extra` including CREATURE_EXTRA_FLAG_AGGRO_ZONE (%u) but creature are not in instance.",
+                sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_AGGRO_ZONE (%u) but creature are not in instance.",
                                 guid, data.id, CREATURE_EXTRA_FLAG_AGGRO_ZONE);
         }
 
         if (data.curmana < cInfo->MinLevelMana)
         {
-            sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with low current mana (%u), `creature_template`.`minmana`=%u.", guid, data.id, data.curmana, cInfo->MinLevelMana);
+            sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with low current mana (%u), `creature_template`.`MinLevelMana`=%u.", guid, data.id, data.curmana, cInfo->MinLevelMana);
             data.curmana = cInfo->MinLevelMana;
         }
 
@@ -1103,7 +1094,12 @@ void ObjectMgr::LoadCreatures()
         }
 
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
+        {
             AddCreatureToGrid(guid, &data);
+
+            if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
+                m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+        }
 
         ++count;
     }
@@ -1111,8 +1107,8 @@ void ObjectMgr::LoadCreatures()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " creatures", mCreatureDataMap.size());
+    sLog.outString();
 }
 
 void ObjectMgr::AddCreatureToGrid(uint32 guid, CreatureData const* data)
@@ -1151,11 +1147,9 @@ void ObjectMgr::LoadGameObjects()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded 0 gameobjects. DB table `gameobject` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -1263,8 +1257,8 @@ void ObjectMgr::LoadGameObjects()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " gameobjects", mGameObjectDataMap.size());
+    sLog.outString();
 }
 
 void ObjectMgr::AddGameobjectToGrid(uint32 guid, GameObjectData const* data)
@@ -1391,10 +1385,7 @@ void ObjectMgr::LoadItemLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 Item locale strings. DB table `locales_item` is empty.");
         return;
     }
@@ -1449,8 +1440,8 @@ void ObjectMgr::LoadItemLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " Item locale strings", mItemLocaleMap.size());
+    sLog.outString();
 }
 
 struct SQLItemLoader : public SQLStorageLoaderBase<SQLItemLoader, SQLStorage>
@@ -1466,8 +1457,6 @@ void ObjectMgr::LoadItemPrototypes()
 {
     SQLItemLoader loader;
     loader.Load(sItemStorage);
-    sLog.outString(">> Loaded %u item prototypes", sItemStorage.GetRecordCount());
-    sLog.outString();
 
     // check data correctness
     for (uint32 i = 1; i < sItemStorage.GetMaxEntry(); ++i)
@@ -1768,6 +1757,9 @@ void ObjectMgr::LoadItemPrototypes()
 
     for (std::set<uint32>::const_iterator itr = notFoundOutfit.begin(); itr != notFoundOutfit.end(); ++itr)
         sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr);
+
+    sLog.outString(">> Loaded %u item prototypes", sItemStorage.GetRecordCount());
+    sLog.outString();
 }
 
 void ObjectMgr::LoadItemRequiredTarget()
@@ -1781,11 +1773,9 @@ void ObjectMgr::LoadItemRequiredTarget()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded 0 ItemRequiredTarget. DB table `item_required_target` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -1870,88 +1860,82 @@ void ObjectMgr::LoadItemRequiredTarget()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u Item required targets", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadPetLevelInfo()
 {
     // Loading levels data
+    //                                                 0               1      2   3     4    5    6    7     8    9
+    QueryResult* result  = WorldDatabase.Query("SELECT creature_entry, level, hp, mana, str, agi, sta, inte, spi, armor FROM pet_levelstats");
+
+    uint32 count = 0;
+
+    if (!result)
     {
-        //                                                 0               1      2   3     4    5    6    7     8    9
-        QueryResult* result  = WorldDatabase.Query("SELECT creature_entry, level, hp, mana, str, agi, sta, inte, spi, armor FROM pet_levelstats");
-
-        uint32 count = 0;
-
-        if (!result)
-        {
-            BarGoLink bar(1);
-            bar.step();
-
-            sLog.outString();
-            sLog.outString(">> Loaded %u level pet stats definitions", count);
-            sLog.outErrorDb("Error loading `pet_levelstats` table or empty table.");
-            return;
-        }
-
-        BarGoLink bar(result->GetRowCount());
-
-        do
-        {
-            Field* fields = result->Fetch();
-
-            uint32 creature_id = fields[0].GetUInt32();
-            if (!sCreatureStorage.LookupEntry<CreatureInfo>(creature_id))
-            {
-                sLog.outErrorDb("Wrong creature id %u in `pet_levelstats` table, ignoring.", creature_id);
-                continue;
-            }
-
-            uint32 current_level = fields[1].GetUInt32();
-            if (current_level > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-            {
-                if (current_level > STRONG_MAX_LEVEL)       // hardcoded level maximum
-                    sLog.outErrorDb("Wrong (> %u) level %u in `pet_levelstats` table, ignoring.", STRONG_MAX_LEVEL, current_level);
-                else
-                {
-                    DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `pet_levelstats` table, ignoring.", current_level);
-                    ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
-                }
-                continue;
-            }
-            else if (current_level < 1)
-            {
-                sLog.outErrorDb("Wrong (<1) level %u in `pet_levelstats` table, ignoring.", current_level);
-                continue;
-            }
-
-            PetLevelInfo*& pInfoMapEntry = petInfo[creature_id];
-
-            if (pInfoMapEntry == NULL)
-                pInfoMapEntry =  new PetLevelInfo[sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)];
-
-            // data for level 1 stored in [0] array element, ...
-            PetLevelInfo* pLevelInfo = &pInfoMapEntry[current_level - 1];
-
-            pLevelInfo->health = fields[2].GetUInt16();
-            pLevelInfo->mana   = fields[3].GetUInt16();
-            pLevelInfo->armor  = fields[9].GetUInt16();
-
-            for (int i = 0; i < MAX_STATS; ++i)
-            {
-                pLevelInfo->stats[i] = fields[i + 4].GetUInt16();
-            }
-
-            bar.step();
-            ++count;
-        }
-        while (result->NextRow());
-
-        delete result;
-
-        sLog.outString();
+        BarGoLink bar(1);
+        bar.step();
         sLog.outString(">> Loaded %u level pet stats definitions", count);
+        sLog.outErrorDb("Error loading `pet_levelstats` table or empty table.");
+        sLog.outString();
+        return;
     }
+
+    BarGoLink bar(result->GetRowCount());
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 creature_id = fields[0].GetUInt32();
+        if (!sCreatureStorage.LookupEntry<CreatureInfo>(creature_id))
+        {
+            sLog.outErrorDb("Wrong creature id %u in `pet_levelstats` table, ignoring.", creature_id);
+            continue;
+        }
+
+        uint32 current_level = fields[1].GetUInt32();
+        if (current_level > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+        {
+            if (current_level > STRONG_MAX_LEVEL)       // hardcoded level maximum
+                sLog.outErrorDb("Wrong (> %u) level %u in `pet_levelstats` table, ignoring.", STRONG_MAX_LEVEL, current_level);
+            else
+            {
+                DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `pet_levelstats` table, ignoring.", current_level);
+                ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
+            }
+            continue;
+        }
+        else if (current_level < 1)
+        {
+            sLog.outErrorDb("Wrong (<1) level %u in `pet_levelstats` table, ignoring.", current_level);
+            continue;
+        }
+
+        PetLevelInfo*& pInfoMapEntry = petInfo[creature_id];
+
+        if (pInfoMapEntry == nullptr)
+            pInfoMapEntry =  new PetLevelInfo[sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)];
+
+        // data for level 1 stored in [0] array element, ...
+        PetLevelInfo* pLevelInfo = &pInfoMapEntry[current_level - 1];
+
+        pLevelInfo->health = fields[2].GetUInt16();
+        pLevelInfo->mana   = fields[3].GetUInt16();
+        pLevelInfo->armor  = fields[9].GetUInt16();
+
+        for (int i = 0; i < MAX_STATS; ++i)
+        {
+            pLevelInfo->stats[i] = fields[i + 4].GetUInt16();
+        }
+
+        bar.step();
+        ++count;
+    }
+    while (result->NextRow());
+
+    delete result;
 
     // Fill gaps and check integrity
     for (PetLevelInfoMap::iterator itr = petInfo.begin(); itr != petInfo.end(); ++itr)
@@ -1976,6 +1960,9 @@ void ObjectMgr::LoadPetLevelInfo()
             }
         }
     }
+
+    sLog.outString(">> Loaded %u level pet stats definitions", count);
+    sLog.outString();
 }
 
 PetLevelInfo const* ObjectMgr::GetPetLevelInfo(uint32 creature_id, uint32 level) const
@@ -1985,7 +1972,7 @@ PetLevelInfo const* ObjectMgr::GetPetLevelInfo(uint32 creature_id, uint32 level)
 
     PetLevelInfoMap::const_iterator itr = petInfo.find(creature_id);
     if (itr == petInfo.end())
-        return NULL;
+        return nullptr;
 
     return &itr->second[level - 1];                         // data for level 1 stored in [0] array element, ...
 }
@@ -2254,7 +2241,7 @@ void ObjectMgr::LoadPlayerInfo()
                 uint32 action = fields[3].GetUInt32();
                 uint8 action_type = fields[4].GetUInt8();
 
-                if (!Player::IsActionButtonDataValid(action_button, action, action_type, NULL))
+                if (!Player::IsActionButtonDataValid(action_button, action, action_type, nullptr))
                     continue;
 
                 PlayerInfo* pInfo = &playerInfo[current_race][current_class];
@@ -2559,8 +2546,8 @@ void ObjectMgr::LoadStandingList(uint32 dateBegin)
 
     uint32 guid, kills, side;
 
-    Field* fields = NULL;
-    QueryResult* result2 = NULL;
+    Field* fields = nullptr;
+    QueryResult* result2 = nullptr;
     // this query create an ordered standing list
     QueryResult* result = CharacterDatabase.PQuery("SELECT guid,SUM(honor) as honor_sum FROM character_honor_cp WHERE TYPE = %u AND date BETWEEN %u AND %u GROUP BY guid ORDER BY honor_sum DESC", HONORABLE, dateBegin, dateBegin + 7);
     if (result)
@@ -2616,7 +2603,7 @@ void ObjectMgr::LoadStandingList()
     DistributeRankPoints(HORDE, LastWeekBegin);
 
     sLog.outString();
-    sLog.outString(">> Loaded %u Horde and %u Ally honor standing definitions", HordeHonorStandingList.size(), AllyHonorStandingList.size());
+    sLog.outString(">> Loaded %u Horde and %u Ally honor standing definitions", static_cast<uint32>(HordeHonorStandingList.size()), static_cast<uint32>(AllyHonorStandingList.size()));
 }
 
 
@@ -2662,7 +2649,7 @@ void ObjectMgr::FlushRankPoints(uint32 dateTop)
     {
         uint32 guid, kills;
         uint8 type;
-        Field* fields = NULL;
+        Field* fields = nullptr;
         do
         {
             fields = result->Fetch();
@@ -2700,8 +2687,8 @@ void ObjectMgr::DistributeRankPoints(uint32 team, uint32 dateBegin , bool flush 
 
     HonorScores scores = MaNGOS::Honor::GenerateScores(list, team);
 
-    Field* fields = NULL;
-    QueryResult* result = NULL;
+    Field* fields = nullptr;
+    QueryResult* result = nullptr;
     for (HonorStandingList::iterator itr = list.begin(); itr != list.end() ; ++itr)
     {
         RP = 0;
@@ -2912,11 +2899,9 @@ void ObjectMgr::LoadGroups()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u group definitions", count);
+        sLog.outString();
         return;
     }
 
@@ -2940,8 +2925,8 @@ void ObjectMgr::LoadGroups()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u group definitions", count);
+    sLog.outString();
 
     // -- loading members --
     count = 0;
@@ -2954,7 +2939,7 @@ void ObjectMgr::LoadGroups()
     }
     else
     {
-        Group* group = NULL;                                // used as cached pointer for avoid relookup group for each member
+        Group* group = nullptr;                                // used as cached pointer for avoid relookup group for each member
 
         BarGoLink bar2(result->GetRowCount());
         do
@@ -3024,7 +3009,7 @@ void ObjectMgr::LoadGroups()
     }
     else
     {
-        Group* group = NULL;                                // used as cached pointer for avoid relookup group for each member
+        Group* group = nullptr;                                // used as cached pointer for avoid relookup group for each member
 
         BarGoLink bar2(result->GetRowCount());
         do
@@ -3062,11 +3047,11 @@ void ObjectMgr::LoadGroups()
         delete result;
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u group-instance binds total", count);
-
     sLog.outString();
+
     sLog.outString(">> Loaded %u group members total", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadQuests()
@@ -3119,9 +3104,9 @@ void ObjectMgr::LoadQuests()
         BarGoLink bar(1);
         bar.step();
 
-        sLog.outString();
         sLog.outString(">> Loaded 0 quests definitions");
         sLog.outErrorDb("`quest_template` table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -3712,8 +3697,8 @@ void ObjectMgr::LoadQuests()
         }
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " quests definitions", mQuestTemplates.size());
+    sLog.outString();
 }
 
 void ObjectMgr::LoadQuestLocales()
@@ -3735,10 +3720,7 @@ void ObjectMgr::LoadQuestLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 Quest locale strings. DB table `locales_quest` is empty.");
         return;
     }
@@ -3899,7 +3881,7 @@ void ObjectMgr::LoadPetCreateSpells()
             continue;
         }
 
-        if (CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : NULL)
+        if (CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : nullptr)
         {
             sLog.outErrorDb("Creature id %u listed in `petcreateinfo_spell` have set `PetSpellDataId` field and will use its instead, skip.", creature_id);
             continue;
@@ -3970,7 +3952,7 @@ void ObjectMgr::LoadPetCreateSpells()
         if (!cInfo)
             continue;
 
-        CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : NULL;
+        CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : nullptr;
         if (!petSpellEntry)
             continue;
 
@@ -4030,8 +4012,8 @@ void ObjectMgr::LoadItemTexts()
 
     delete result;
 
+    sLog.outString(">> Loaded %u item texts", count);
     sLog.outString();
-    sLog.outString(">> Loaded " SIZEFMTD " item texts", count);
 }
 
 void ObjectMgr::LoadPageTexts()
@@ -4085,10 +4067,7 @@ void ObjectMgr::LoadPageTextLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 PageText locale strings. DB table `locales_page_text` is empty.");
         return;
     }
@@ -4130,8 +4109,8 @@ void ObjectMgr::LoadPageTextLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " PageText locale strings", mPageTextLocaleMap.size());
+    sLog.outString();
 }
 
 struct SQLInstanceLoader : public SQLStorageLoaderBase<SQLInstanceLoader, SQLStorage>
@@ -4293,7 +4272,7 @@ GossipText const* ObjectMgr::GetGossipText(uint32 Text_ID) const
     GossipTextMap::const_iterator itr = mGossipText.find(Text_ID);
     if (itr != mGossipText.end())
         return &itr->second;
-    return NULL;
+    return nullptr;
 }
 
 void ObjectMgr::LoadGossipText()
@@ -4306,19 +4285,17 @@ void ObjectMgr::LoadGossipText()
         BarGoLink bar(1);
         bar.step();
 
-        sLog.outString();
         sLog.outString(">> Loaded %u npc texts", count);
+        sLog.outString();
         return;
     }
-
-    int cic;
 
     BarGoLink bar(result->GetRowCount());
 
     do
     {
         ++count;
-        cic = 0;
+        int cic = 0;
 
         Field* fields = result->Fetch();
 
@@ -4350,8 +4327,8 @@ void ObjectMgr::LoadGossipText()
     }
     while (result->NextRow());
 
-    sLog.outString();
     sLog.outString(">> Loaded %u npc texts", count);
+    sLog.outString();
     delete result;
 }
 
@@ -4373,10 +4350,7 @@ void ObjectMgr::LoadGossipTextLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 Quest locale strings. DB table `locales_npc_text` is empty.");
         return;
     }
@@ -4433,14 +4407,15 @@ void ObjectMgr::LoadGossipTextLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " NpcText locale strings", mNpcTextLocaleMap.size());
+    sLog.outString();
 }
 
 // not very fast function but it is called only once a day, or on starting-up
+/// @param serverUp true if the server is already running, false when the server is started
 void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
-    time_t basetime = time(NULL);
+    time_t basetime = time(nullptr);
     DEBUG_LOG("Returning mails current time: hour: %d, minute: %d, second: %d ", localtime(&basetime)->tm_hour, localtime(&basetime)->tm_min, localtime(&basetime)->tm_sec);
     // delete all old mails without item and without body immediately, if starting server
     if (!serverUp)
@@ -4451,8 +4426,8 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Only expired mails (need to be return or delete) or DB table `mail` is empty.");
+        sLog.outString();
         return;                                             // any mails need to be returned or deleted
     }
 
@@ -4546,8 +4521,8 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u mails", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadQuestAreaTriggers()
@@ -4562,9 +4537,8 @@ void ObjectMgr::LoadQuestAreaTriggers()
     {
         BarGoLink bar(1);
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u quest trigger points", count);
+        sLog.outString();
         return;
     }
 
@@ -4610,8 +4584,8 @@ void ObjectMgr::LoadQuestAreaTriggers()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u quest trigger points", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadTavernAreaTriggers()
@@ -4626,9 +4600,8 @@ void ObjectMgr::LoadTavernAreaTriggers()
     {
         BarGoLink bar(1);
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u tavern triggers", count);
+        sLog.outString();
         return;
     }
 
@@ -4656,8 +4629,8 @@ void ObjectMgr::LoadTavernAreaTriggers()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u tavern triggers", count);
+    sLog.outString();
 }
 
 uint32 ObjectMgr::GetNearestTaxiNode(float x, float y, float z, uint32 mapid, Team team)
@@ -4773,9 +4746,8 @@ void ObjectMgr::LoadGraveyardZones()
     {
         BarGoLink bar(1);
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u graveyard-zone links", count);
+        sLog.outString();
         return;
     }
 
@@ -4825,8 +4797,8 @@ void ObjectMgr::LoadGraveyardZones()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u graveyard-zone links", count);
+    sLog.outString();
 }
 
 WorldSafeLocsEntry const* ObjectMgr::GetClosestGraveYard(float x, float y, float z, uint32 MapId, Team team)
@@ -4846,21 +4818,21 @@ WorldSafeLocsEntry const* ObjectMgr::GetClosestGraveYard(float x, float y, float
     if (bounds.first == bounds.second)
     {
         sLog.outErrorDb("Table `game_graveyard_zone` incomplete: Zone %u Team %u does not have a linked graveyard.", zoneId, uint32(team));
-        return NULL;
+        return nullptr;
     }
 
     // at corpse map
     bool foundNear = false;
     float distNear;
-    WorldSafeLocsEntry const* entryNear = NULL;
+    WorldSafeLocsEntry const* entryNear = nullptr;
 
     // at entrance map for corpse map
     bool foundEntr = false;
     float distEntr;
-    WorldSafeLocsEntry const* entryEntr = NULL;
+    WorldSafeLocsEntry const* entryEntr = nullptr;
 
     // some where other
-    WorldSafeLocsEntry const* entryFar = NULL;
+    WorldSafeLocsEntry const* entryFar = nullptr;
 
     InstanceTemplate const* tempEntry = GetInstanceTemplate(MapId);
 
@@ -4949,7 +4921,7 @@ GraveYardData const* ObjectMgr::FindGraveYardData(uint32 id, uint32 zoneId) cons
             return &itr->second;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 bool ObjectMgr::AddGraveYardLink(uint32 id, uint32 zoneId, Team team, bool inDB)
@@ -5006,11 +4978,9 @@ void ObjectMgr::LoadAreaTriggerTeleports()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u area trigger teleport definitions", count);
+        sLog.outString();
         return;
     }
 
@@ -5094,8 +5064,8 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u area trigger teleport definitions", count);
+    sLog.outString();
 }
 
 /*
@@ -5105,11 +5075,11 @@ AreaTrigger const* ObjectMgr::GetGoBackTrigger(uint32 map_id) const
 {
     InstanceTemplate const* temp = GetInstanceTemplate(map_id);
     if (!temp)
-        return NULL;
+        return nullptr;
 
     // Try to find one that teleports to the map we want to enter
     std::list<AreaTrigger const*> ghostTrigger;
-    AreaTrigger const* compareTrigger = NULL;
+    AreaTrigger const* compareTrigger = nullptr;
     for (AreaTriggerMap::const_iterator itr = mAreaTriggers.begin(); itr != mAreaTriggers.end(); ++itr)
     {
         if (itr->second.target_mapId == uint32(temp->ghostEntranceMap))
@@ -5147,7 +5117,7 @@ AreaTrigger const* ObjectMgr::GetGoBackTrigger(uint32 map_id) const
  */
 AreaTrigger const* ObjectMgr::GetMapEntranceTrigger(uint32 Map) const
 {
-    AreaTrigger const* compareTrigger = NULL;
+    AreaTrigger const* compareTrigger = nullptr;
     MapEntry const* mEntry = sMapStore.LookupEntry(Map);
 
     for (AreaTriggerMap::const_iterator itr = mAreaTriggers.begin(); itr != mAreaTriggers.end(); ++itr)
@@ -5346,10 +5316,7 @@ void ObjectMgr::LoadGameObjectLocales()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded 0 gameobject locale strings. DB table `locales_gameobject` is empty.");
         return;
     }
@@ -5391,8 +5358,8 @@ void ObjectMgr::LoadGameObjectLocales()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded " SIZEFMTD " gameobject locale strings", mGameObjectLocaleMap.size());
+    sLog.outString();
 }
 
 struct SQLGameObjectLoader : public SQLStorageLoaderBase<SQLGameObjectLoader, SQLHashStorage>
@@ -5659,11 +5626,9 @@ void ObjectMgr::LoadExplorationBaseXP()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u BaseXP definitions", count);
+        sLog.outString();
         return;
     }
 
@@ -5683,8 +5648,8 @@ void ObjectMgr::LoadExplorationBaseXP()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u BaseXP definitions", count);
+    sLog.outString();
 }
 
 uint32 ObjectMgr::GetBaseXP(uint32 level) const
@@ -5708,11 +5673,9 @@ void ObjectMgr::LoadPetNames()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u pet name parts", count);
+        sLog.outString();
         return;
     }
 
@@ -5735,8 +5698,8 @@ void ObjectMgr::LoadPetNames()
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u pet name parts", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadPetNumber()
@@ -5752,8 +5715,8 @@ void ObjectMgr::LoadPetNumber()
     BarGoLink bar(1);
     bar.step();
 
-    sLog.outString();
     sLog.outString(">> Loaded the max pet number: %d", m_PetNumbers.GetNextAfterMaxUsed() - 1);
+    sLog.outString();
 }
 
 std::string ObjectMgr::GeneratePetName(uint32 entry)
@@ -5786,11 +5749,9 @@ void ObjectMgr::LoadCorpses()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u corpses", count);
+        sLog.outString();
         return;
     }
 
@@ -5818,8 +5779,8 @@ void ObjectMgr::LoadCorpses()
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u corpses", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadReputationRewardRate()
@@ -5832,11 +5793,9 @@ void ObjectMgr::LoadReputationRewardRate()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded `reputation_reward_rate`, table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -5889,8 +5848,8 @@ void ObjectMgr::LoadReputationRewardRate()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u reputation_reward_rate", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadReputationOnKill()
@@ -5906,11 +5865,9 @@ void ObjectMgr::LoadReputationOnKill()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded 0 creature award reputation definitions. DB table `creature_onkill_reputation` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -5968,8 +5925,8 @@ void ObjectMgr::LoadReputationOnKill()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u creature award reputation definitions", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadReputationSpilloverTemplate()
@@ -5982,11 +5939,9 @@ void ObjectMgr::LoadReputationSpilloverTemplate()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded `reputation_spillover_template`, table is empty.");
+        sLog.outString();
         return;
     }
 
@@ -6088,8 +6043,8 @@ void ObjectMgr::LoadReputationSpilloverTemplate()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u reputation_spillover_template", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadPointsOfInterest()
@@ -6104,11 +6059,9 @@ void ObjectMgr::LoadPointsOfInterest()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded 0 Points of Interest definitions. DB table `points_of_interest` is empty.");
+        sLog.outString();
         return;
     }
 
@@ -6143,72 +6096,8 @@ void ObjectMgr::LoadPointsOfInterest()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u Points of Interest definitions", count);
-}
-
-void ObjectMgr::LoadWeatherZoneChances()
-{
-    uint32 count = 0;
-
-    //                                                0     1                   2                   3                    4                   5                   6                    7                 8                 9                  10                  11                  12
-    QueryResult* result = WorldDatabase.Query("SELECT zone, spring_rain_chance, spring_snow_chance, spring_storm_chance, summer_rain_chance, summer_snow_chance, summer_storm_chance, fall_rain_chance, fall_snow_chance, fall_storm_chance, winter_rain_chance, winter_snow_chance, winter_storm_chance FROM game_weather");
-
-    if (!result)
-    {
-        BarGoLink bar(1);
-
-        bar.step();
-
-        sLog.outString();
-        sLog.outErrorDb(">> Loaded 0 weather definitions. DB table `game_weather` is empty.");
-        return;
-    }
-
-    BarGoLink bar(result->GetRowCount());
-
-    do
-    {
-        Field* fields = result->Fetch();
-        bar.step();
-
-        uint32 zone_id = fields[0].GetUInt32();
-
-        WeatherZoneChances& wzc = mWeatherZoneMap[zone_id];
-
-        for (int season = 0; season < WEATHER_SEASONS; ++season)
-        {
-            wzc.data[season].rainChance  = fields[season * (MAX_WEATHER_TYPE - 1) + 1].GetUInt32();
-            wzc.data[season].snowChance  = fields[season * (MAX_WEATHER_TYPE - 1) + 2].GetUInt32();
-            wzc.data[season].stormChance = fields[season * (MAX_WEATHER_TYPE - 1) + 3].GetUInt32();
-
-            if (wzc.data[season].rainChance > 100)
-            {
-                wzc.data[season].rainChance = 25;
-                sLog.outErrorDb("Weather for zone %u season %u has wrong rain chance > 100%%", zone_id, season);
-            }
-
-            if (wzc.data[season].snowChance > 100)
-            {
-                wzc.data[season].snowChance = 25;
-                sLog.outErrorDb("Weather for zone %u season %u has wrong snow chance > 100%%", zone_id, season);
-            }
-
-            if (wzc.data[season].stormChance > 100)
-            {
-                wzc.data[season].stormChance = 25;
-                sLog.outErrorDb("Weather for zone %u season %u has wrong storm chance > 100%%", zone_id, season);
-            }
-        }
-
-        ++count;
-    }
-    while (result->NextRow());
-
-    delete result;
-
     sLog.outString();
-    sLog.outString(">> Loaded %u weather definitions", count);
 }
 
 void ObjectMgr::DeleteCreatureData(uint32 guid)
@@ -6330,7 +6219,7 @@ void ObjectMgr::LoadCreatureQuestRelations()
         if (!cInfo)
             sLog.outErrorDb("Table `creature_questrelation` have data for nonexistent creature entry (%u) and existing quest %u", itr->first, itr->second);
         else if (!(cInfo->NpcFlags & UNIT_NPC_FLAG_QUESTGIVER))
-            sLog.outErrorDb("Table `creature_questrelation` has creature entry (%u) for quest %u, but npcflag does not include UNIT_NPC_FLAG_QUESTGIVER", itr->first, itr->second);
+            sLog.outErrorDb("Table `creature_questrelation` has creature entry (%u) for quest %u, but NpcFlags does not include UNIT_NPC_FLAG_QUESTGIVER", itr->first, itr->second);
     }
 }
 
@@ -6344,7 +6233,7 @@ void ObjectMgr::LoadCreatureInvolvedRelations()
         if (!cInfo)
             sLog.outErrorDb("Table `creature_involvedrelation` have data for nonexistent creature entry (%u) and existing quest %u", itr->first, itr->second);
         else if (!(cInfo->NpcFlags & UNIT_NPC_FLAG_QUESTGIVER))
-            sLog.outErrorDb("Table `creature_involvedrelation` has creature entry (%u) for quest %u, but npcflag does not include UNIT_NPC_FLAG_QUESTGIVER", itr->first, itr->second);
+            sLog.outErrorDb("Table `creature_involvedrelation` has creature entry (%u) for quest %u, but NpcFlags does not include UNIT_NPC_FLAG_QUESTGIVER", itr->first, itr->second);
     }
 }
 
@@ -6360,9 +6249,8 @@ void ObjectMgr::LoadReservedPlayersNames()
     {
         BarGoLink bar(1);
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u reserved player names", count);
+        sLog.outString();
         return;
     }
 
@@ -6391,8 +6279,8 @@ void ObjectMgr::LoadReservedPlayersNames()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u reserved player names", count);
+    sLog.outString();
 }
 
 bool ObjectMgr::IsReservedName(const std::string& name) const
@@ -6443,7 +6331,7 @@ static LanguageType GetRealmLanguageType(bool create)
     }
 }
 
-bool isValidString(std::wstring wstr, uint32 strictMask, bool numericOrSpace, bool create = false)
+bool isValidString(const std::wstring& wstr, uint32 strictMask, bool numericOrSpace, bool create = false)
 {
     if (strictMask == 0)                                    // any language, ignore realm
     {
@@ -6578,8 +6466,8 @@ void ObjectMgr::LoadGameObjectForQuests()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded 0 GameObjects for quests");
+        sLog.outString();
         return;
     }
 
@@ -6648,8 +6536,8 @@ void ObjectMgr::LoadGameObjectForQuests()
         }
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u GameObjects for quests", count);
+    sLog.outString();
 }
 
 inline void _DoStringError(int32 entry, char const* text, ...)
@@ -6855,11 +6743,9 @@ void ObjectMgr::LoadFishingBaseSkillLevel()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded `skill_fishing_base_level`, table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -6887,8 +6773,8 @@ void ObjectMgr::LoadFishingBaseSkillLevel()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u areas for fishing base skill level", count);
+    sLog.outString();
 }
 
 // Check if a player meets condition conditionId
@@ -6900,6 +6786,8 @@ bool ObjectMgr::IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlaye
     return false;
 }
 
+// Attention: make sure to keep this list in sync with ConditionSource to avoid array
+//            out of bounds access! It is accessed with ConditionSource as index!
 char const* conditionSourceToStr[] =
 {
     "loot system",
@@ -6910,6 +6798,7 @@ char const* conditionSourceToStr[] =
     "hardcoded",
     "vendor's item check",
     "spell_area check",
+    "npc_spellclick_spells check", // Unused. For 3.x and later.
     "DBScript engine"
 };
 
@@ -6917,7 +6806,7 @@ char const* conditionSourceToStr[] =
 bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const
 {
     DEBUG_LOG("Condition-System: Check condition %u, type %i - called from %s with params plr: %s, map %i, src %s",
-              m_entry, m_condition, conditionSourceToStr[conditionSourceType], player ? player->GetGuidStr().c_str() : "<NULL>", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "<NULL>");
+              m_entry, m_condition, conditionSourceToStr[conditionSourceType], player ? player->GetGuidStr().c_str() : "<nullptr>", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "<nullptr>");
 
     if (!CheckParamRequirements(player, map, source, conditionSourceType))
         return false;
@@ -6954,7 +6843,12 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
             return faction && player->GetReputationMgr().GetRank(faction) >= ReputationRank(m_value2);
         }
         case CONDITION_TEAM:
-            return uint32(player->GetTeam()) == m_value1;
+        {
+            if (conditionSourceType == CONDITION_FROM_REFERING_LOOT && sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
+                return true;
+            else
+                return uint32(player->GetTeam()) == m_value1;
+        }
         case CONDITION_SKILL:
             return player->HasSkill(m_value1) && player->GetBaseSkillValue(m_value1) >= m_value2;
         case CONDITION_QUESTREWARDED:
@@ -7143,7 +7037,7 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
                         return true;
                     if (Group const* grp = player->GetGroup())
                     {
-                        for (GroupReference const* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+                        for (GroupReference const* itr = grp->GetFirstMember(); itr != nullptr; itr = itr->next())
                         {
                             Player const* pl = itr->getSource();
                             if (pl && pl->isAlive() && !pl->isGameMaster() && (!m_value2 || !source || source->IsWithinDistInMap(pl, m_value2)))
@@ -7164,6 +7058,16 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
                 case 3:                                     // Creature source is dead
                     return !source || source->GetTypeId() != TYPEID_UNIT || !((Unit*)source)->isAlive();
             }
+        case CONDITION_CREATURE_IN_RANGE:
+        {
+            Creature* creature = nullptr;
+
+            MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*player, m_value1, true, false, m_value2, true);
+            MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(creature, creature_check);
+            Cell::VisitGridObjects(player, searcher, m_value2);
+
+            return creature;
+        }
         default:
             return false;
     }
@@ -7188,7 +7092,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
             if (!pPlayer && !source)
             {
                 sLog.outErrorDb("CONDITION %u type %u used with bad parameters, called from %s, used with plr: %s, map %i, src %s",
-                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "NULL", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "NULL");
+                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "nullptr", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "nullptr");
                 return false;
             }
             break;
@@ -7196,7 +7100,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
             if (!pPlayer && !source && !map)
             {
                 sLog.outErrorDb("CONDITION %u type %u used with bad parameters, called from %s, used with plr: %s, map %i, src %s",
-                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "NULL", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "NULL");
+                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "nullptr", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "nullptr");
                 return false;
             }
             break;
@@ -7205,7 +7109,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
             if (!source)
             {
                 sLog.outErrorDb("CONDITION %u type %u used with bad parameters, called from %s, used with plr: %s, map %i, src %s",
-                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "NULL", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "NULL");
+                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "nullptr", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "nullptr");
                 return false;
             }
             break;
@@ -7238,7 +7142,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
             if (!pPlayer)
             {
                 sLog.outErrorDb("CONDITION %u type %u used with bad parameters, called from %s, used with plr: %s, map %i, src %s",
-                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "NULL", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "NULL");
+                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "nullptr", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "nullptr");
                 return false;
             }
             break;
@@ -7568,6 +7472,19 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             }
             break;
         }
+        case CONDITION_CREATURE_IN_RANGE:
+        {
+            if (!sCreatureStorage.LookupEntry<CreatureInfo> (value1))
+            {
+                sLog.outErrorDb("Creature in range condition (entry %u, type %u) has an invalid value in value1. (Creature %u does not exist in the database), skipping.", entry, condition, value1);
+                return false;
+            }
+            if (value2 <= 0)
+            {
+                sLog.outErrorDb("Creature in range condition (entry %u, type %u) has an invalid value in value2. (Range %u must be greater than 0), skipping.", entry, condition, value2);
+                return false;
+            }
+        }
         case CONDITION_NONE:
             break;
         default:
@@ -7649,11 +7566,9 @@ void ObjectMgr::LoadGameTele()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded `game_tele`, table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -7697,8 +7612,8 @@ void ObjectMgr::LoadGameTele()
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u GameTeleports", count);
+    sLog.outString();
 }
 
 GameTele const* ObjectMgr::GetGameTele(const std::string& name) const
@@ -7706,17 +7621,17 @@ GameTele const* ObjectMgr::GetGameTele(const std::string& name) const
     // explicit name case
     std::wstring wname;
     if (!Utf8toWStr(name, wname))
-        return NULL;
+        return nullptr;
 
     // converting string that we try to find to lower case
     wstrToLower(wname);
 
     // Alternative first GameTele what contains wnameLow as substring in case no GameTele location found
-    const GameTele* alt = NULL;
+    const GameTele* alt = nullptr;
     for (GameTeleMap::const_iterator itr = m_GameTeleMap.begin(); itr != m_GameTeleMap.end(); ++itr)
         if (itr->second.wnameLow == wname)
             return &itr->second;
-        else if (alt == NULL && itr->second.wnameLow.find(wname) != std::wstring::npos)
+        else if (alt == nullptr && itr->second.wnameLow.find(wname) != std::wstring::npos)
             alt = &itr->second;
 
     return alt;
@@ -7788,11 +7703,9 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded `%s`, table is empty!", tableName);
+        sLog.outString();
         return;
     }
 
@@ -7870,7 +7783,7 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
                 continue;
             }
 
-            if (TrainerSpellData const* tSpells = cInfo->TrainerTemplateId ? GetNpcTrainerTemplateSpells(cInfo->TrainerTemplateId) : NULL)
+            if (TrainerSpellData const* tSpells = cInfo->TrainerTemplateId ? GetNpcTrainerTemplateSpells(cInfo->TrainerTemplateId) : nullptr)
             {
                 if (tSpells->spellList.find(spell) != tSpells->spellList.end())
                 {
@@ -7890,7 +7803,7 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
         trainerSpell.reqLevel      = fields[5].GetUInt32();
 
         trainerSpell.isProvidedReqLevel = trainerSpell.reqLevel > 0;
-		
+
         if (trainerSpell.reqLevel)
         {
             if (trainerSpell.reqLevel == spellinfo->spellLevel)
@@ -7907,8 +7820,8 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %d trainer %sspells", count, isTemplates ? "template " : "");
+    sLog.outString();
 }
 
 void ObjectMgr::LoadTrainerTemplates()
@@ -7917,6 +7830,7 @@ void ObjectMgr::LoadTrainerTemplates()
 
     // post loading check
     std::set<uint32> trainer_ids;
+    bool hasErrored = false;
 
     for (CacheTrainerSpellMap::const_iterator tItr = m_mCacheTrainerTemplateSpellMap.begin(); tItr != m_mCacheTrainerTemplateSpellMap.end(); ++tItr)
         trainer_ids.insert(tItr->first);
@@ -7930,13 +7844,19 @@ void ObjectMgr::LoadTrainerTemplates()
                 if (m_mCacheTrainerTemplateSpellMap.find(cInfo->TrainerTemplateId) != m_mCacheTrainerTemplateSpellMap.end())
                     trainer_ids.erase(cInfo->TrainerTemplateId);
                 else
-                    sLog.outErrorDb("Creature (Entry: %u) has trainer_id = %u for nonexistent trainer template", cInfo->Entry, cInfo->TrainerTemplateId);
+                {
+                    sLog.outErrorDb("Creature (Entry: %u) has TrainerTemplateId = %u for nonexistent trainer template", cInfo->Entry, cInfo->TrainerTemplateId);
+                    hasErrored = true;
+                }
             }
         }
     }
 
     for (std::set<uint32>::const_iterator tItr = trainer_ids.begin(); tItr != trainer_ids.end(); ++tItr)
         sLog.outErrorDb("Table `npc_trainer_template` has trainer template %u not used by any trainers ", *tItr);
+
+    if (hasErrored || !trainer_ids.empty())                 // Append extra line in case of reported errors
+        sLog.outString();
 }
 
 void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
@@ -7957,8 +7877,8 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
 
         bar.step();
 
-        sLog.outString();
         sLog.outString(">> Loaded `%s`, table is empty!", tableName);
+        sLog.outString();
         return;
     }
 
@@ -7976,7 +7896,7 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
         uint32 incrtime     = fields[3].GetUInt32();
         uint16 conditionId  = fields[4].GetUInt16();
 
-        if (!IsVendorItemValid(isTemplates, tableName, entry, item_id, maxcount, incrtime, conditionId, NULL, &skip_vendors))
+        if (!IsVendorItemValid(isTemplates, tableName, entry, item_id, maxcount, incrtime, conditionId, nullptr, &skip_vendors))
             continue;
 
         VendorItemData& vList = vendorList[entry];
@@ -7987,8 +7907,8 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
     while (result->NextRow());
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u vendor %sitems", count, isTemplates ? "template " : "");
+    sLog.outString();
 }
 
 
@@ -8011,13 +7931,64 @@ void ObjectMgr::LoadVendorTemplates()
                 if (m_mCacheVendorTemplateItemMap.find(cInfo->VendorTemplateId) !=  m_mCacheVendorTemplateItemMap.end())
                     vendor_ids.erase(cInfo->VendorTemplateId);
                 else
-                    sLog.outErrorDb("Creature (Entry: %u) has vendor_id = %u for nonexistent vendor template", cInfo->Entry, cInfo->VendorTemplateId);
+                    sLog.outErrorDb("Creature (Entry: %u) has VendorTemplateId = %u for nonexistent vendor template", cInfo->Entry, cInfo->VendorTemplateId);
             }
         }
     }
 
     for (std::set<uint32>::const_iterator vItr = vendor_ids.begin(); vItr != vendor_ids.end(); ++vItr)
         sLog.outErrorDb("Table `npc_vendor_template` has vendor template %u not used by any vendors ", *vItr);
+}
+
+/* This function is supposed to take care of three things:
+ *  1) Load Transports on Map or on Continents
+ *  2) Load Active Npcs on Map or Continents
+ *  3) Load Everything dependend on config setting LoadAllGridsOnMaps
+ *
+ *  This function is currently WIP, hence parts exist only as draft.
+ */
+void ObjectMgr::LoadActiveEntities(Map* _map)
+{
+    // Special case on startup - load continents
+    if (!_map)
+    {
+        uint32 continents[] = {0, 1};
+        for (int i = 0; i < countof(continents); ++i)
+        {
+            _map = sMapMgr.FindMap(continents[i]);
+            if (!_map)
+                _map = sMapMgr.CreateMap(continents[i], nullptr);
+
+            if (_map)
+                LoadActiveEntities(_map);
+            else
+                sLog.outError("ObjectMgr::LoadActiveEntities - Unable to create Map %u", continents[i]);
+        }
+
+        return;
+    }
+
+    // Load active objects for _map
+    std::set<uint32> const* mapList = sWorld.getConfigForceLoadMapIds();
+    if (mapList && mapList->find(_map->GetId()) != mapList->end())
+    {
+        for (CreatureDataMap::const_iterator itr = mCreatureDataMap.begin(); itr != mCreatureDataMap.end(); ++itr)
+        {
+            if (itr->second.mapid == _map->GetId())
+                _map->ForceLoadGrid(itr->second.posX, itr->second.posY);
+        }
+    }
+    else                                                    // Normal case - Load all npcs that are active
+    {
+        std::pair<ActiveCreatureGuidsOnMap::const_iterator, ActiveCreatureGuidsOnMap::const_iterator> bounds = m_activeCreatures.equal_range(_map->GetId());
+        for (ActiveCreatureGuidsOnMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        {
+            CreatureData const& data = mCreatureDataMap[itr->second];
+            _map->ForceLoadGrid(data.posX, data.posY);
+        }
+    }
+
+    // Load Transports on Map _map
 }
 
 void ObjectMgr::LoadNpcGossips()
@@ -8029,11 +8000,9 @@ void ObjectMgr::LoadNpcGossips()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
+        sLog.outString(">> Loaded `npc_gossip`, table is empty!");
         sLog.outString();
-        sLog.outErrorDb(">> Loaded `npc_gossip`, table is empty!");
         return;
     }
 
@@ -8067,8 +8036,8 @@ void ObjectMgr::LoadNpcGossips()
     while (result->NextRow());
     delete result;
 
+    sLog.outString(">> Loaded %d NpcTextId", count);
     sLog.outString();
-    sLog.outString(">> Loaded %d NpcTextId ", count);
 }
 
 void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
@@ -8082,11 +8051,9 @@ void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded gossip_menu, table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -8145,20 +8112,25 @@ void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
 
     delete result;
 
-    sLog.outString();
-    sLog.outString(">> Loaded %u gossip_menu entries", count);
-
     // post loading tests
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
+    {
         if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
             if (cInfo->GossipMenuId)
                 if (m_mGossipMenusMap.find(cInfo->GossipMenuId) == m_mGossipMenusMap.end())
-                    sLog.outErrorDb("Creature (Entry: %u) has gossip_menu_id = %u for nonexistent menu", cInfo->Entry, cInfo->GossipMenuId);
+                    sLog.outErrorDb("Creature (Entry: %u) has GossipMenuId = %u for nonexistent menu", cInfo->Entry, cInfo->GossipMenuId);
+    }
 
-    for (SQLStorageBase::SQLSIterator<GameObjectInfo> itr = sGOStorage.getDataBegin<GameObjectInfo>(); itr < sGOStorage.getDataEnd<GameObjectInfo>(); ++itr)
-        if (uint32 menuid = itr->GetGossipMenuId())
-            if (m_mGossipMenusMap.find(menuid) == m_mGossipMenusMap.end())
-                ERROR_DB_STRICT_LOG("Gameobject (Entry: %u) has gossip_menu_id = %u for nonexistent menu", itr->id, menuid);
+    if (!sLog.HasLogFilter(LOG_FILTER_DB_STRICTED_CHECK))
+    {
+        for (SQLStorageBase::SQLSIterator<GameObjectInfo> itr = sGOStorage.getDataBegin<GameObjectInfo>(); itr < sGOStorage.getDataEnd<GameObjectInfo>(); ++itr)
+            if (uint32 menuid = itr->GetGossipMenuId())
+                if (m_mGossipMenusMap.find(menuid) == m_mGossipMenusMap.end())
+                    sLog.outErrorDb("Gameobject (Entry: %u) has gossip_menu_id = %u for nonexistent menu", itr->id, menuid);
+    }
+
+    sLog.outString(">> Loaded %u gossip_menu entries", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
@@ -8174,11 +8146,9 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outErrorDb(">> Loaded gossip_menu_option, table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -8284,7 +8254,7 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
             }
 
             if (found_menu_uses && !found_flags_uses)
-                sLog.outErrorDb("Table gossip_menu_option for menu %u, id %u has `npc_option_npcflag` = %u but creatures using this menu does not have corresponding`npcflag`. Option will not accessible in game.", gMenuItem.menu_id, gMenuItem.id, gMenuItem.npc_option_npcflag);
+                sLog.outErrorDb("Table gossip_menu_option for menu %u, id %u has `npc_option_npcflag` = %u but creatures using this menu does not have corresponding `NpcFlags`. Option will not accessible in game.", gMenuItem.menu_id, gMenuItem.id, gMenuItem.npc_option_npcflag);
         }
 
         if (gMenuItem.action_poi_id && !GetPointOfInterest(gMenuItem.action_poi_id))
@@ -8329,8 +8299,8 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
             sLog.outErrorDb("Table `gossip_menu` contain unused (in creature or GO or menu options) menu id %u.", *itr);
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u gossip_menu_option entries", count);
+    sLog.outString();
 }
 
 void ObjectMgr::LoadGossipMenus()
@@ -8374,7 +8344,7 @@ bool ObjectMgr::RemoveVendorItem(uint32 entry, uint32 item)
 bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32 vendor_entry, uint32 item_id, uint32 maxcount, uint32 incrtime, uint16 conditionId, Player* pl, std::set<uint32>* skip_vendors) const
 {
     char const* idStr = isTemplate ? "vendor template" : "vendor";
-    CreatureInfo const* cInfo = NULL;
+    CreatureInfo const* cInfo = nullptr;
 
     if (!isTemplate)
     {
@@ -8440,7 +8410,7 @@ bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32
     }
 
     VendorItemData const* vItems = isTemplate ? GetNpcVendorTemplateItemList(vendor_entry) : GetNpcVendorItemList(vendor_entry);
-    VendorItemData const* tItems = isTemplate ? NULL : GetNpcVendorTemplateItemList(vendor_entry);
+    VendorItemData const* tItems = isTemplate ? nullptr : GetNpcVendorTemplateItemList(vendor_entry);
 
     if (!vItems && !tItems)
         return true;                                        // later checks for non-empty lists
@@ -8504,7 +8474,7 @@ void ObjectMgr::GetCreatureLocaleStrings(uint32 entry, int32 loc_idx, char const
 {
     if (loc_idx >= 0)
     {
-        if (CreatureLocale const *il = GetCreatureLocale(entry))
+        if (CreatureLocale const* il = GetCreatureLocale(entry))
         {
             if (namePtr && il->Name.size() > size_t(loc_idx) && !il->Name[loc_idx].empty())
                 *namePtr = il->Name[loc_idx].c_str();
@@ -8519,7 +8489,7 @@ void ObjectMgr::GetItemLocaleStrings(uint32 entry, int32 loc_idx, std::string* n
 {
     if (loc_idx >= 0)
     {
-        if(ItemLocale const *il = GetItemLocale(entry))
+        if (ItemLocale const* il = GetItemLocale(entry))
         {
             if (namePtr && il->Name.size() > size_t(loc_idx) && !il->Name[loc_idx].empty())
                 *namePtr = il->Name[loc_idx];
@@ -8534,7 +8504,7 @@ void ObjectMgr::GetQuestLocaleStrings(uint32 entry, int32 loc_idx, std::string* 
 {
     if (loc_idx >= 0)
     {
-        if(QuestLocale const *il = GetQuestLocale(entry))
+        if (QuestLocale const* il = GetQuestLocale(entry))
         {
             if (titlePtr && il->Title.size() > size_t(loc_idx) && !il->Title[loc_idx].empty())
                 *titlePtr = il->Title[loc_idx];
@@ -8546,7 +8516,7 @@ void ObjectMgr::GetNpcTextLocaleStringsAll(uint32 entry, int32 loc_idx, ObjectMg
 {
     if (loc_idx >= 0)
     {
-        if (NpcTextLocale const *nl = GetNpcTextLocale(entry))
+        if (NpcTextLocale const* nl = GetNpcTextLocale(entry))
         {
             if (text0_Ptr)
                 for (int i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; ++i)
@@ -8565,7 +8535,7 @@ void ObjectMgr::GetNpcTextLocaleStrings0(uint32 entry, int32 loc_idx, std::strin
 {
     if (loc_idx >= 0)
     {
-        if (NpcTextLocale const *nl = GetNpcTextLocale(entry))
+        if (NpcTextLocale const* nl = GetNpcTextLocale(entry))
         {
             if (text0_0_Ptr)
                 if (nl->Text_0[0].size() > (size_t)loc_idx && !nl->Text_0[0][loc_idx].empty())
@@ -8596,9 +8566,6 @@ void ObjectMgr::LoadCreatureTemplateSpells()
 {
     sCreatureTemplateSpellsStorage.Load();
 
-    sLog.outString(">> Loaded %u creature_template_spells definitions", sCreatureTemplateSpellsStorage.GetRecordCount());
-    sLog.outString();
-
     for (SQLStorageBase::SQLSIterator<CreatureTemplateSpells> itr = sCreatureTemplateSpellsStorage.getDataBegin<CreatureTemplateSpells>(); itr < sCreatureTemplateSpellsStorage.getDataEnd<CreatureTemplateSpells>(); ++itr)
     {
         if (!sCreatureStorage.LookupEntry<CreatureInfo>(itr->entry))
@@ -8615,6 +8582,9 @@ void ObjectMgr::LoadCreatureTemplateSpells()
             }
         }
     }
+
+    sLog.outString(">> Loaded %u creature_template_spells definitions", sCreatureTemplateSpellsStorage.GetRecordCount());
+    sLog.outString();
 }
 
 CreatureInfo const* GetCreatureTemplateStore(uint32 entry)
@@ -8732,7 +8702,7 @@ GameObjectDataPair const* FindGOData::GetResult() const
     return i_anyData;
 }
 
-bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target /*=NULL*/)
+bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target /*=nullptr*/)
 {
     MangosStringLocale const* data = sObjectMgr.GetMangosStringLocale(entry);
 

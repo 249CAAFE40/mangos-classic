@@ -136,11 +136,11 @@ enum Stats
 
 enum Powers
 {
-    POWER_MANA                          = 0,
-    POWER_RAGE                          = 1,
-    POWER_FOCUS                         = 2,
-    POWER_ENERGY                        = 3,
-    POWER_HAPPINESS                     = 4,
+    POWER_MANA                          = 0,            // UNIT_FIELD_POWER1
+    POWER_RAGE                          = 1,            // UNIT_FIELD_POWER2
+    POWER_FOCUS                         = 2,            // UNIT_FIELD_POWER3
+    POWER_ENERGY                        = 3,            // UNIT_FIELD_POWER4
+    POWER_HAPPINESS                     = 4,            // UNIT_FIELD_POWER5
     POWER_HEALTH                        = 0xFFFFFFFE    // (-2 as signed value)
 };
 
@@ -299,7 +299,7 @@ enum SpellAttributesEx
     SPELL_ATTR_EX_UNAFFECTED_BY_SCHOOL_IMMUNE   = 0x00010000,            // 16 unaffected by school immunity
     SPELL_ATTR_EX_UNK17                         = 0x00020000,            // 17 for auras SPELL_AURA_TRACK_CREATURES, SPELL_AURA_TRACK_RESOURCES and SPELL_AURA_TRACK_STEALTHED select non-stacking tracking spells
     SPELL_ATTR_EX_UNK18                         = 0x00040000,            // 18
-    SPELL_ATTR_EX_UNK19                         = 0x00080000,            // 19
+    SPELL_ATTR_EX_CANT_TARGET_SELF              = 0x00080000,            // 19 spells with area effect or friendly targets that exclude the caster
     SPELL_ATTR_EX_REQ_TARGET_COMBO_POINTS       = 0x00100000,            // 20 Req combo points on target
     SPELL_ATTR_EX_UNK21                         = 0x00200000,            // 21
     SPELL_ATTR_EX_REQ_COMBO_POINTS              = 0x00400000,            // 22 Use combo points (in 4.x not required combo point target selected)
@@ -380,7 +380,7 @@ enum SpellAttributesEx3
     SPELL_ATTR_EX3_UNK25                        = 0x02000000,            // 25 no cause spell pushback ?
     SPELL_ATTR_EX3_UNK26                        = 0x04000000,            // 26
     SPELL_ATTR_EX3_UNK27                        = 0x08000000,            // 27
-    SPELL_ATTR_EX3_UNK28                        = 0x10000000,            // 28
+    SPELL_ATTR_EX3_UNK28                        = 0x10000000,            // 28 always cast ok ? (requires more research)
     SPELL_ATTR_EX3_UNK29                        = 0x20000000,            // 29
     SPELL_ATTR_EX3_UNK30                        = 0x40000000,            // 30
     SPELL_ATTR_EX3_UNK31                        = 0x80000000,            // 31
@@ -398,7 +398,7 @@ enum SpellAttributesEx4
     SPELL_ATTR_EX4_UNK7                         = 0x00000080,            // 7
     SPELL_ATTR_EX4_UNK8                         = 0x00000100,            // 8
     SPELL_ATTR_EX4_UNK9                         = 0x00000200,            // 9
-    SPELL_ATTR_EX4_SPELL_VS_EXTEND_COST         = 0x00000400,            // 10 Rogue Shiv have this flag
+    SPELL_ATTR_EX4_SPELL_VS_EXTEND_COST         = 0x00000400,            // 10
     SPELL_ATTR_EX4_UNK11                        = 0x00000800,            // 11
     SPELL_ATTR_EX4_UNK12                        = 0x00001000,            // 12
     SPELL_ATTR_EX4_UNK13                        = 0x00002000,            // 13
@@ -491,6 +491,15 @@ enum Team
     HORDE               = 67,
     ALLIANCE            = 469,
 };
+
+enum PvpTeamIndex
+{
+    TEAM_INDEX_ALLIANCE = 0,
+    TEAM_INDEX_HORDE    = 1,
+    TEAM_INDEX_NEUTRAL  = 2,
+};
+
+#define PVP_TEAM_COUNT    2
 
 enum SpellEffects
 {
@@ -894,7 +903,7 @@ enum Targets
     TARGET_SELF                        = 1,
     TARGET_RANDOM_ENEMY_CHAIN_IN_AREA  = 2,                 // only one spell has that, but regardless, it's a target type after all
     TARGET_RANDOM_FRIEND_CHAIN_IN_AREA = 3,
-    TARGET_4                           = 4,                 // some plague spells that are infectious - maybe targets not-infected friends inrange
+    TARGET_RANDOM_UNIT_CHAIN_IN_AREA   = 4,                 // some plague spells that are infectious - maybe targets not-infected friends inrange
     TARGET_PET                         = 5,
     TARGET_CHAIN_DAMAGE                = 6,
     TARGET_AREAEFFECT_INSTANT          = 7,                 // targets around provided destination point
@@ -1004,7 +1013,8 @@ enum DamageEffectType
     DOT                     = 2,
     HEAL                    = 3,
     NODAMAGE                = 4,                            //< used also in case when damage applied to health but not applied to spell channelInterruptFlags/etc
-    SELF_DAMAGE             = 5
+    SELF_DAMAGE_ROGUE_FALL  = 5,                            //< used to avoid rogue loosing stealth on falling damage
+    SELF_DAMAGE             = 6
 };
 
 enum GameobjectTypes
@@ -1060,6 +1070,7 @@ enum GameObjectDynamicLowFlags
     GO_DYNFLAG_LO_ACTIVATE          = 0x01,                 // enables interaction with GO
     GO_DYNFLAG_LO_ANIMATE           = 0x02,                 // possibly more distinct animation of GO
     GO_DYNFLAG_LO_NO_INTERACT       = 0x04,                 // appears to disable interaction (not fully verified)
+    GO_DYNFLAG_LO_SPARKLE           = 0x08,                 // makes GO sparkle TODO is it valid??
 };
 
 enum TextEmotes
@@ -2011,9 +2022,7 @@ enum WeatherType
     WEATHER_TYPE_FINE       = 0,
     WEATHER_TYPE_RAIN       = 1,
     WEATHER_TYPE_SNOW       = 2,
-    WEATHER_TYPE_STORM      = 3,
-    WEATHER_TYPE_THUNDERS   = 86,
-    WEATHER_TYPE_BLACKRAIN  = 90
+    WEATHER_TYPE_STORM      = 3
 };
 
 #define MAX_WEATHER_TYPE 4
@@ -2429,7 +2438,7 @@ enum TradeStatus
     TRADE_STATUS_NO_TARGET      = 6,
     TRADE_STATUS_BACK_TO_TRADE  = 7,
     TRADE_STATUS_TRADE_COMPLETE = 8,
-    // 9?
+    TRADE_STATUS_TRADE_REJECTED = 9,
     TRADE_STATUS_TARGET_TO_FAR  = 10,
     TRADE_STATUS_WRONG_FACTION  = 11,
     TRADE_STATUS_CLOSE_WINDOW   = 12,
@@ -2442,7 +2451,8 @@ enum TradeStatus
     TRADE_STATUS_YOU_LOGOUT     = 19,
     TRADE_STATUS_TARGET_LOGOUT  = 20,
     TRADE_STATUS_TRIAL_ACCOUNT  = 21,                       // Trial accounts can not perform that action
-    TRADE_STATUS_ONLY_CONJURED  = 22                        // You can only trade conjured items... (cross realm BG related).
+    TRADE_STATUS_WRONG_REALM    = 22,                       // You can only trade conjured items... (cross realm BG related).
+    TRADE_STATUS_NOT_ON_TAPLIST = 23                        // Related to trading soulbound loot items
 };
 
 enum WorldStateType
@@ -2496,10 +2506,51 @@ enum TrackedAuraType
 
 #define EXPECTED_MANGOSD_CLIENT_BUILD        {5875, 6005, 6141, 0}
 
-// Maxlevel for expansion
-#define MAX_LEVEL_CLASSIC                    60
-
 // Max creature level (included some bosses and elite)
 #define DEFAULT_MAX_CREATURE_LEVEL 65
+
+enum TeleportLocation
+{
+    TELEPORT_LOCATION_HOMEBIND          = 0,
+    TELEPORT_LOCATION_BG_ENTRY_POINT    = 1,
+};
+
+// For Loot system
+enum CreatureLootStatus
+{
+    CREATURE_LOOT_STATUS_NONE           = 0,
+    CREATURE_LOOT_STATUS_PICKPOCKETED   = 1,
+    CREATURE_LOOT_STATUS_LOOTED         = 2,
+    CREATURE_LOOT_STATUS_SKIN_AVAILABLE = 3,
+    CREATURE_LOOT_STATUS_SKINNED        = 4
+};
+
+enum LootMethod
+{
+    FREE_FOR_ALL        = 0,
+    ROUND_ROBIN         = 1,
+    MASTER_LOOT         = 2,
+    GROUP_LOOT          = 3,
+    NEED_BEFORE_GREED   = 4,
+
+    NOT_GROUP_TYPE_LOOT = 5                                 // internal use only
+};
+
+// internal loot type
+enum LootType
+{
+    LOOT_CORPSE         = 1,
+    LOOT_PICKPOCKETING  = 2,
+    LOOT_FISHING        = 3,
+    LOOT_DISENCHANTING  = 4,
+    LOOT_SKINNING       = 6,
+    LOOT_PROSPECTING    = 7,
+    LOOT_MILLING        = 8,
+    LOOT_FISHINGHOLE    = 20,
+    LOOT_FISHING_FAIL   = 21,
+    LOOT_INSIGNIA       = 22,
+    LOOT_MAIL           = 23,
+    LOOT_SPELL          = 24,
+};
 
 #endif

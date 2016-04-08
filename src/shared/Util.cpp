@@ -41,7 +41,7 @@ uint32 WorldTimer::tick()
     m_iPrevTime = m_iTime;
 
     // get the new one and don't forget to persist current system time in m_SystemTickTime
-    m_iTime = WorldTimer::getMSTime_internal(true);
+    m_iTime = WorldTimer::getMSTime_internal();
 
     // return tick diff
     return getMSTimeDiff(m_iPrevTime, m_iTime);
@@ -52,14 +52,14 @@ uint32 WorldTimer::getMSTime()
     return getMSTime_internal();
 }
 
-uint32 WorldTimer::getMSTime_internal(bool /*savetime*/ /*= false*/)
+uint32 WorldTimer::getMSTime_internal()
 {
     // get current time
     const ACE_Time_Value currTime = ACE_OS::gettimeofday();
     // calculate time diff between two world ticks
     // special case: curr_time < old_time - we suppose that our time has not ticked at all
     // this should be constant value otherwise it is possible that our time can start ticking backwards until next world tick!!!
-    uint64 diff = 0;
+    ACE_UINT64 diff = 0;
     (currTime - g_SystemTickTime).msec(diff);
 
     // lets calculate current world time
@@ -260,7 +260,7 @@ bool IsIPAddress(char const* ipaddress)
 uint32 CreatePIDFile(const std::string& filename)
 {
     FILE* pid_file = fopen(filename.c_str(), "w");
-    if (pid_file == NULL)
+    if (pid_file == nullptr)
         return 0;
 
 #ifdef WIN32

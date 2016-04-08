@@ -187,7 +187,7 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
                         if (GetSpellDuration(spellProto))
                             overTime = GetSpellDuration(spellProto);
                         break;
-                        // Penalty for additional effects
+                    // Penalty for additional effects
                     case SPELL_AURA_DUMMY:
                         ++effects;
                         break;
@@ -412,12 +412,12 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
                 {
                     switch (spellInfo->EffectApplyAuraName[i])
                     {
-                            // Food
+                        // Food
                         case SPELL_AURA_MOD_REGEN:
                         case SPELL_AURA_OBS_MOD_HEALTH:
                             food = true;
                             break;
-                            // Drink
+                        // Drink
                         case SPELL_AURA_MOD_POWER_REGEN:
                         case SPELL_AURA_OBS_MOD_MANA:
                             drink = true;
@@ -615,7 +615,7 @@ bool IsPositiveTarget(uint32 targetA, uint32 targetB)
 {
     switch (targetA)
     {
-            // non-positive targets
+        // non-positive targets
         case TARGET_CHAIN_DAMAGE:
         case TARGET_ALL_ENEMY_IN_AREA:
         case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
@@ -623,7 +623,7 @@ bool IsPositiveTarget(uint32 targetA, uint32 targetB)
         case TARGET_ALL_ENEMY_IN_AREA_CHANNELED:
         case TARGET_CURRENT_ENEMY_COORDINATES:
             return false;
-            // positive or dependent
+        // positive or dependent
         case TARGET_CASTER_COORDINATES:
             return (targetB == TARGET_ALL_PARTY || targetB == TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER);
         default:
@@ -682,14 +682,14 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                     break;
             }
             break;
-            // always positive effects (check before target checks that provided non-positive result in some case for positive effects)
+        // always positive effects (check before target checks that provided non-positive result in some case for positive effects)
         case SPELL_EFFECT_HEAL:
         case SPELL_EFFECT_LEARN_SPELL:
         case SPELL_EFFECT_SKILL_STEP:
         case SPELL_EFFECT_QUEST_COMPLETE:
             return true;
 
-            // non-positive aura use
+        // non-positive aura use
         case SPELL_EFFECT_APPLY_AURA:
         {
             switch (spellproto->EffectApplyAuraName[effIndex])
@@ -702,7 +702,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                         case 13139:                         // net-o-matic special effect
                         case 23445:                         // evil twin
                             return false;
-                            // some spells have unclear target modes for selection, so just make effect positive
+                        // some spells have unclear target modes for selection, so just make effect positive
                         case 27184:
                         case 27190:
                         case 27191:
@@ -725,6 +725,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                         return false;
                     break;
                 case SPELL_AURA_MOD_DAMAGE_TAKEN:           // dependent from bas point sign (positive -> negative)
+                case SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN:
                     if (spellproto->CalculateSimpleValue(effIndex) < 0)
                         return true;
                     // let check by target modes (for Amplify Magic cases/etc)
@@ -1017,11 +1018,9 @@ void SpellMgr::LoadSpellTargetPositions()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u spell target destination coordinates", count);
+        sLog.outString();
         return;
     }
 
@@ -1085,8 +1084,8 @@ void SpellMgr::LoadSpellTargetPositions()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell target destination coordinates", count);
+    sLog.outString();
 }
 
 template <typename EntryType, typename WorkerType, typename StorageType>
@@ -1260,7 +1259,7 @@ struct DoSpellProcEvent
             ++count;
     }
 
-    bool HasEntry(uint32 spellId) { return spe_map.count(spellId) > 0; }
+    bool HasEntry(uint32 spellId) { return spe_map.find(spellId) != spe_map.end(); }
     bool SetStateToEntry(uint32 spellId) { return (state = spe_map.find(spellId)) != spe_map.end(); }
     SpellProcEventMap& spe_map;
     SpellProcEventMap::const_iterator state;
@@ -1317,8 +1316,8 @@ void SpellMgr::LoadSpellProcEvents()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u extra spell proc event conditions +%u custom proc (inc. +%u custom ranks)",  rankHelper.worker.count, rankHelper.worker.customProc, rankHelper.customRank);
+    sLog.outString();
 }
 
 struct DoSpellProcItemEnchant
@@ -1341,11 +1340,9 @@ void SpellMgr::LoadSpellProcItemEnchant()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u proc item enchant definitions", count);
+        sLog.outString();
         return;
     }
 
@@ -1389,8 +1386,8 @@ void SpellMgr::LoadSpellProcItemEnchant()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u proc item enchant definitions", count);
+    sLog.outString();
 }
 
 struct DoSpellBonuses
@@ -1412,8 +1409,8 @@ void SpellMgr::LoadSpellBonuses()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> Loaded %u spell bonus data", count);
+        sLog.outString();
         return;
     }
 
@@ -1534,8 +1531,8 @@ void SpellMgr::LoadSpellBonuses()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u extra spell bonus data",  count);
+    sLog.outString();
 }
 
 bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellProcEvent, uint32 EventProcFlag, SpellEntry const* procSpell, uint32 procFlags, uint32 procExtra)
@@ -1557,7 +1554,7 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellPr
         procEvent_procEx = spellProcEvent->procEx;
 
         // For melee triggers
-        if (procSpell == NULL)
+        if (procSpell == nullptr)
         {
             // Check (if set) for school (melee attack have Normal school)
             if (spellProcEvent->schoolMask && (spellProcEvent->schoolMask & SPELL_SCHOOL_MASK_NORMAL) == 0)
@@ -1612,8 +1609,8 @@ void SpellMgr::LoadSpellElixirs()
 
         bar.step();
 
-        sLog.outString();
         sLog.outString(">> Loaded %u spell elixir definitions", count);
+        sLog.outString();
         return;
     }
 
@@ -1644,8 +1641,8 @@ void SpellMgr::LoadSpellElixirs()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell elixir definitions", count);
+    sLog.outString();
 }
 
 struct DoSpellThreat
@@ -1711,8 +1708,8 @@ void SpellMgr::LoadSpellThreats()
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString();
         sLog.outString(">> No spell threat entries loaded.");
+        sLog.outString();
         return;
     }
 
@@ -1741,8 +1738,8 @@ void SpellMgr::LoadSpellThreats()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell threat entries", rankHelper.worker.count);
+    sLog.outString();
 }
 
 bool SpellMgr::IsRankSpellDueToSpell(SpellEntry const* spellInfo_1, uint32 spellId_2) const
@@ -1870,6 +1867,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     break;
                 case SPELLFAMILY_WARRIOR:
                 {
+                    // Defensive State Dummy and Shield Block
+                    if (spellInfo_1->Id == 5302 && spellInfo_2->Id == 2565)
+                        return false;
+
                     // Scroll of Protection and Defensive Stance (multi-family check)
                     if (spellInfo_1->SpellIconID == 276 && spellInfo_1->SpellVisual == 196 && spellInfo_2->Id == 71)
                         return false;
@@ -1995,6 +1996,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         (spellInfo_2->SpellIconID == 456 && spellInfo_1->SpellIconID == 2006))
                     return false;
             }
+
+            // Defensive State Dummy and Shield Block
+            if (spellInfo_2->Id == 5302 && spellInfo_1->Id == 2565)
+                return false;
 
             // Hamstring -> Improved Hamstring (multi-family check)
             if ((spellInfo_1->SpellFamilyFlags & UI64LIT(0x2)) && spellInfo_2->Id == 23694)
@@ -2268,17 +2273,17 @@ SpellEntry const* SpellMgr::SelectAuraRankForLevel(SpellEntry const* spellInfo, 
             break;
 
         // if found appropriate level
-        if (level + 10 >= spellInfo->spellLevel)
+        if (level + 10 >= nextSpellInfo->spellLevel)
             return nextSpellInfo;
 
         // one rank less then
     }
 
     // not found
-    return NULL;
+    return nullptr;
 }
 
-typedef UNORDERED_MAP<uint32, uint32> AbilitySpellPrevMap;
+typedef std::unordered_map<uint32, uint32> AbilitySpellPrevMap;
 
 static void LoadSpellChains_AbilityHelper(SpellChainMap& chainMap, AbilitySpellPrevMap const& prevRanks, uint32 spell_id, uint32 prev_id, uint32 deep = 30)
 {
@@ -2467,9 +2472,9 @@ void SpellMgr::LoadSpellChains()
         BarGoLink bar(1);
         bar.step();
 
-        sLog.outString();
         sLog.outString(">> Loaded 0 spell chain records");
         sLog.outErrorDb("`spell_chains` table is empty!");
+        sLog.outString();
         return;
     }
 
@@ -2684,8 +2689,8 @@ void SpellMgr::LoadSpellChains()
         }
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell chain records (%u from DBC data with %u req field updates, and %u loaded from table)", dbc_count + new_count, dbc_count, req_count, new_count);
+    sLog.outString();
 }
 
 void SpellMgr::LoadSpellLearnSkills()
@@ -2723,8 +2728,8 @@ void SpellMgr::LoadSpellLearnSkills()
         }
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u Spell Learn Skills from DBC", dbc_count);
+    sLog.outString();
 }
 
 void SpellMgr::LoadSpellLearnSpells()
@@ -2834,8 +2839,8 @@ void SpellMgr::LoadSpellLearnSpells()
         }
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell learn spells + %u found in DBC", count, dbc_count);
+    sLog.outString();
 }
 
 void SpellMgr::LoadSpellScriptTarget()
@@ -2869,7 +2874,9 @@ void SpellMgr::LoadSpellScriptTarget()
                     spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
                     spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_SOURCE ||
                     spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
-                    spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_DEST)
+                    spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_GO_AROUND_DEST ||
+                    spellProto->EffectImplicitTargetA[i] == TARGET_NARROW_FRONTAL_CONE ||
+                    spellProto->EffectImplicitTargetB[i] == TARGET_NARROW_FRONTAL_CONE)
             {
                 targetfound = true;
                 break;
@@ -2916,7 +2923,7 @@ void SpellMgr::LoadSpellScriptTarget()
                 {
                     if (itr->spellId == 30427 && !cInfo->SkinningLootId)
                     {
-                        sLog.outErrorDb("Table `spell_script_target` has creature %u as a target of spellid 30427, but this creature has no skinlootid. Gas extraction will not work!", cInfo->Entry);
+                        sLog.outErrorDb("Table `spell_script_target` has creature %u as a target of spellid 30427, but this creature has no SkinningLootId. Gas extraction will not work!", cInfo->Entry);
                         sSpellScriptTargetStorage.EraseEntry(itr->spellId);
                         continue;
                     }
@@ -2955,6 +2962,9 @@ void SpellMgr::LoadSpellScriptTarget()
             }
         }
     }
+
+    sLog.outString(">> Loaded %u spell_script_target definitions", sSpellScriptTargetStorage.GetRecordCount());
+    sLog.outString();
 }
 
 void SpellMgr::LoadSpellPetAuras()
@@ -2968,11 +2978,9 @@ void SpellMgr::LoadSpellPetAuras()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u spell pet auras", count);
+        sLog.outString();
         return;
     }
 
@@ -3031,8 +3039,8 @@ void SpellMgr::LoadSpellPetAuras()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell pet auras", count);
+    sLog.outString();
 }
 
 /// Some checks for spells, to prevent adding deprecated/broken spells for trainers, spell book, etc
@@ -3052,7 +3060,7 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
             case SPELL_EFFECT_NONE:
                 continue;
 
-                // craft spell for crafting nonexistent item (break client recipes list show)
+            // craft spell for crafting nonexistent item (break client recipes list show)
             case SPELL_EFFECT_CREATE_ITEM:
             {
                 if (!ObjectMgr::GetItemPrototype(spellInfo->EffectItemType[i]))
@@ -3123,11 +3131,9 @@ void SpellMgr::LoadSpellAreas()
     if (!result)
     {
         BarGoLink bar(1);
-
         bar.step();
-
-        sLog.outString();
         sLog.outString(">> Loaded %u spell area requirements", count);
+        sLog.outString();
         return;
     }
 
@@ -3200,40 +3206,40 @@ void SpellMgr::LoadSpellAreas()
             continue;
         }
         else if (!spellArea.conditionId)
-    {
-        if (spellArea.questStart && !sObjectMgr.GetQuestTemplate(spellArea.questStart))
         {
-            sLog.outErrorDb("Spell %u listed in `spell_area` have wrong start quest (%u) requirement", spell, spellArea.questStart);
-            continue;
-        }
-
-        if (spellArea.questEnd)
-        {
-            if (!sObjectMgr.GetQuestTemplate(spellArea.questEnd))
+            if (spellArea.questStart && !sObjectMgr.GetQuestTemplate(spellArea.questStart))
             {
-                sLog.outErrorDb("Spell %u listed in `spell_area` have wrong end quest (%u) requirement", spell, spellArea.questEnd);
+                sLog.outErrorDb("Spell %u listed in `spell_area` have wrong start quest (%u) requirement", spell, spellArea.questStart);
                 continue;
             }
 
-            if (spellArea.questEnd == spellArea.questStart && !spellArea.questStartCanActive)
+            if (spellArea.questEnd)
             {
-                sLog.outErrorDb("Spell %u listed in `spell_area` have quest (%u) requirement for start and end in same time", spell, spellArea.questEnd);
+                if (!sObjectMgr.GetQuestTemplate(spellArea.questEnd))
+                {
+                    sLog.outErrorDb("Spell %u listed in `spell_area` have wrong end quest (%u) requirement", spell, spellArea.questEnd);
+                    continue;
+                }
+
+                if (spellArea.questEnd == spellArea.questStart && !spellArea.questStartCanActive)
+                {
+                    sLog.outErrorDb("Spell %u listed in `spell_area` have quest (%u) requirement for start and end in same time", spell, spellArea.questEnd);
+                    continue;
+                }
+            }
+
+            if (spellArea.raceMask && (spellArea.raceMask & RACEMASK_ALL_PLAYABLE) == 0)
+            {
+                sLog.outErrorDb("Spell %u listed in `spell_area` have wrong race mask (%u) requirement", spell, spellArea.raceMask);
+                continue;
+            }
+
+            if (spellArea.gender != GENDER_NONE && spellArea.gender != GENDER_FEMALE && spellArea.gender != GENDER_MALE)
+            {
+                sLog.outErrorDb("Spell %u listed in `spell_area` have wrong gender (%u) requirement", spell, spellArea.gender);
                 continue;
             }
         }
-
-        if (spellArea.raceMask && (spellArea.raceMask & RACEMASK_ALL_PLAYABLE) == 0)
-        {
-            sLog.outErrorDb("Spell %u listed in `spell_area` have wrong race mask (%u) requirement", spell, spellArea.raceMask);
-            continue;
-        }
-
-        if (spellArea.gender != GENDER_NONE && spellArea.gender != GENDER_FEMALE && spellArea.gender != GENDER_MALE)
-        {
-            sLog.outErrorDb("Spell %u listed in `spell_area` have wrong gender (%u) requirement", spell, spellArea.gender);
-            continue;
-        }
-   }
 
         if (spellArea.auraSpell)
         {
@@ -3314,8 +3320,8 @@ void SpellMgr::LoadSpellAreas()
 
     delete result;
 
-    sLog.outString();
     sLog.outString(">> Loaded %u spell area requirements", count);
+    sLog.outString();
 }
 
 SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spellInfo, uint32 map_id, uint32 zone_id, uint32 area_id, Player const* player)
@@ -3341,7 +3347,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
 
     switch (spellInfo->Id)
     {
-            // a trinket in alterac valley allows to teleport to the boss
+        // a trinket in alterac valley allows to teleport to the boss
         case 22564:                                         // recall
         case 22563:                                         // recall
         {
@@ -3390,8 +3396,8 @@ void SpellMgr::LoadSkillLineAbilityMap()
         ++count;
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u SkillLineAbility MultiMap Data", count);
+    sLog.outString();
 }
 
 void SpellMgr::LoadSkillRaceClassInfoMap()
@@ -3417,8 +3423,8 @@ void SpellMgr::LoadSkillRaceClassInfoMap()
         ++count;
     }
 
-    sLog.outString();
     sLog.outString(">> Loaded %u SkillRaceClassInfo MultiMap Data", count);
+    sLog.outString();
 }
 
 void SpellMgr::CheckUsedSpells(char const* table)
@@ -3808,39 +3814,39 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
 {
     if (conditionId)
     {
-        if (!player || !sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), NULL, CONDITION_FROM_SPELL_AREA))
+        if (!player || !sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), nullptr, CONDITION_FROM_SPELL_AREA))
             return false;
     }
     else                                                    // This block will be removed
- {
-    if (gender != GENDER_NONE)
     {
-        // not in expected gender
-        if (!player || gender != player->getGender())
-            return false;
-    }
+        if (gender != GENDER_NONE)
+        {
+            // not in expected gender
+            if (!player || gender != player->getGender())
+                return false;
+        }
 
-    if (raceMask)
-    {
-        // not in expected race
-        if (!player || !(raceMask & player->getRaceMask()))
-            return false;
-    }
+        if (raceMask)
+        {
+            // not in expected race
+            if (!player || !(raceMask & player->getRaceMask()))
+                return false;
+        }
 
-    if (questStart)
-    {
-        // not in expected required quest state
-        if (!player || (!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart))
-            return false;
-    }
+        if (questStart)
+        {
+            // not in expected required quest state
+            if (!player || ((!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart)))
+                return false;
+        }
 
-    if (questEnd)
-    {
-        // not in expected forbidden quest state
-        if (!player || player->GetQuestRewardStatus(questEnd))
-            return false;
+        if (questEnd)
+        {
+            // not in expected forbidden quest state
+            if (!player || player->GetQuestRewardStatus(questEnd))
+                return false;
+        }
     }
- }
 
     if (areaId)
     {

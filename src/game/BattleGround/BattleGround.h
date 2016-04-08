@@ -81,6 +81,7 @@ enum BattleGroundMarksCount
 
 enum BattleGroundTimeIntervals
 {
+    CHECK_PLAYER_POSITION_INVERVAL  = 1000,                 // ms
     RESURRECTION_INTERVAL           = 30000,                // ms
     INVITATION_REMIND_TIME          = 60000,                // ms
     INVITE_ACCEPT_WAIT_TIME         = 80000,                // ms
@@ -125,7 +126,7 @@ struct BattleGroundPlayer
 
 struct BattleGroundObjectInfo
 {
-    BattleGroundObjectInfo() : object(NULL), timer(0), spellid(0) {}
+    BattleGroundObjectInfo() : object(nullptr), timer(0), spellid(0) {}
 
     GameObject*  object;
     int32       timer;
@@ -171,14 +172,6 @@ enum ScoreType
     SCORE_SECONDARY_OBJECTIVES  = 15
 };
 
-enum BattleGroundTeamIndex
-{
-    BG_TEAM_ALLIANCE        = 0,
-    BG_TEAM_HORDE           = 1
-};
-
-#define BG_TEAMS_COUNT  2
-
 enum BattleGroundStartingEvents
 {
     BG_STARTING_EVENT_NONE  = 0x00,
@@ -218,6 +211,19 @@ class BattleGroundScore
             DishonorableKills(0), BonusHonor(0)
         {}
         virtual ~BattleGroundScore() {}                     // virtual destructor is used when deleting score from scores map
+
+        uint32 GetKillingBlows() const      { return KillingBlows; }
+        uint32 GetDeaths() const            { return Deaths; }
+        uint32 GetHonorableKills() const    { return HonorableKills; }
+        uint32 GetBonusHonor() const        { return BonusHonor; }
+        uint32 GetDamageDone() const        { return 0; }
+        uint32 GetHealingDone() const       { return 0; }
+
+        virtual uint32 GetAttr1() const     { return 0; }
+        virtual uint32 GetAttr2() const     { return 0; }
+        virtual uint32 GetAttr3() const     { return 0; }
+        virtual uint32 GetAttr4() const     { return 0; }
+        virtual uint32 GetAttr5() const     { return 0; }
 
         uint32 KillingBlows;
         uint32 Deaths;
@@ -333,17 +339,20 @@ class BattleGround
         void SetTeamStartLoc(Team team, float X, float Y, float Z, float O);
         void GetTeamStartLoc(Team team, float& X, float& Y, float& Z, float& O) const
         {
-            BattleGroundTeamIndex idx = GetTeamIndexByTeamId(team);
+            PvpTeamIndex idx = GetTeamIndexByTeamId(team);
             X = m_TeamStartLocX[idx];
             Y = m_TeamStartLocY[idx];
             Z = m_TeamStartLocZ[idx];
             O = m_TeamStartLocO[idx];
         }
 
+        void SetStartMaxDist(float startMaxDist) { m_startMaxDist = startMaxDist; }
+        float GetStartMaxDist() const { return m_startMaxDist; }
+
         /* Packet Transfer */
         // method that should fill worldpacket with actual world states (not yet implemented for all battlegrounds!)
         virtual void FillInitialWorldStates(WorldPacket& /*data*/, uint32& /*count*/) {}
-        void SendPacketToTeam(Team team, WorldPacket* packet, Player* sender = NULL, bool self = true);
+        void SendPacketToTeam(Team team, WorldPacket* packet, Player* sender = nullptr, bool self = true);
         void SendPacketToAll(WorldPacket* packet);
 
         template<class Do>
@@ -364,7 +373,7 @@ class BattleGround
         virtual void EndBattleGround(Team winner);
         void BlockMovement(Player* plr);
 
-        void SendMessageToAll(int32 entry, ChatMsg type, Player const* source = NULL);
+        void SendMessageToAll(int32 entry, ChatMsg type, Player const* source = nullptr);
         void SendYellToAll(int32 entry, uint32 language, ObjectGuid guid);
         void PSendMessageToAll(int32 entry, ChatMsg type, Player const* source, ...);
 
@@ -378,7 +387,7 @@ class BattleGround
 
         virtual void UpdatePlayerScore(Player* Source, uint32 type, uint32 value);
 
-        static BattleGroundTeamIndex GetTeamIndexByTeamId(Team team) { return team == ALLIANCE ? BG_TEAM_ALLIANCE : BG_TEAM_HORDE; }
+        static PvpTeamIndex GetTeamIndexByTeamId(Team team) { return team == ALLIANCE ? TEAM_INDEX_ALLIANCE : TEAM_INDEX_HORDE; }
         uint32 GetPlayersCountByTeam(Team team) const { return m_PlayersCount[GetTeamIndexByTeamId(team)]; }
         uint32 GetAlivePlayersCountByTeam(Team team) const; // used in arenas to correctly handle death in spirit of redemption / last stand etc. (killer = killed) cases
         void UpdatePlayersCountByTeam(Team team, bool remove)
@@ -391,7 +400,7 @@ class BattleGround
 
         /* Triggers handle */
         // must be implemented in BG subclass
-        virtual void HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/) {}
+        virtual bool HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/) { return false;  }
         // must be implemented in BG subclass if need AND call base class generic code
         virtual void HandleKillPlayer(Player* player, Player* killer);
         virtual void HandleKillUnit(Creature* /*unit*/, Player* /*killer*/) {}
@@ -406,7 +415,7 @@ class BattleGround
         virtual void EventPlayerDroppedFlag(Player* /*player*/) {}
         virtual void EventPlayerClickedOnFlag(Player* /*player*/, GameObject* /*target_obj*/) {}
         virtual void EventPlayerCapturedFlag(Player* /*player*/) {}
-        void EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid);
+        void EventPlayerLoggedIn(Player* player);
         void EventPlayerLoggedOut(Player* player);
 
         /* Death related */
@@ -445,16 +454,18 @@ class BattleGround
         void DoorOpen(ObjectGuid guid);
         void DoorClose(ObjectGuid guid);
 
+        virtual Team GetPrematureWinner();
+
         virtual bool HandlePlayerUnderMap(Player* /*plr*/) { return false; }
 
         // since arenas can be AvA or Hvh, we have to get the "temporary" team of a player
         Team GetPlayerTeam(ObjectGuid guid);
         static Team GetOtherTeam(Team team) { return team ? ((team == ALLIANCE) ? HORDE : ALLIANCE) : TEAM_NONE; }
-        static BattleGroundTeamIndex GetOtherTeamIndex(BattleGroundTeamIndex teamIdx) { return teamIdx == BG_TEAM_ALLIANCE ? BG_TEAM_HORDE : BG_TEAM_ALLIANCE; }
+        static PvpTeamIndex GetOtherTeamIndex(PvpTeamIndex teamIdx) { return teamIdx == TEAM_INDEX_ALLIANCE ? TEAM_INDEX_HORDE : TEAM_INDEX_ALLIANCE; }
         bool IsPlayerInBattleGround(ObjectGuid guid);
 
         /* virtual score-array - get's used in bg-subclasses */
-        int32 m_TeamScores[BG_TEAMS_COUNT];
+        int32 m_TeamScores[PVP_TEAM_COUNT];
 
         struct EventObjects
         {
@@ -502,6 +513,7 @@ class BattleGround
         BattleGroundStatus m_Status;
         uint32 m_ClientInstanceID;                          // the instance-id which is sent to the client and without any other internal use
         uint32 m_StartTime;
+        uint32 m_validStartPositionTimer;
         int32 m_EndTime;                                    // it is set to 120000 when bg is ending and it decreases itself
         BattleGroundBracketId m_BracketId;
         bool   m_InBGFreeSlotQueue;                         // used to make sure that BG is only once inserted into the BattleGroundMgr.BGFreeSlotQueue[bgTypeId] deque
@@ -522,10 +534,10 @@ class BattleGround
         uint32 m_InvitedHorde;
 
         /* Raid Group */
-        Group* m_BgRaids[BG_TEAMS_COUNT];                   // 0 - alliance, 1 - horde
+        Group* m_BgRaids[PVP_TEAM_COUNT];                   // 0 - alliance, 1 - horde
 
         /* Players count by team */
-        uint32 m_PlayersCount[BG_TEAMS_COUNT];
+        uint32 m_PlayersCount[PVP_TEAM_COUNT];
 
         /* Limits */
         uint32 m_LevelMin;
@@ -538,10 +550,11 @@ class BattleGround
         /* Start location */
         uint32 m_MapId;
         BattleGroundMap* m_Map;
-        float m_TeamStartLocX[BG_TEAMS_COUNT];
-        float m_TeamStartLocY[BG_TEAMS_COUNT];
-        float m_TeamStartLocZ[BG_TEAMS_COUNT];
-        float m_TeamStartLocO[BG_TEAMS_COUNT];
+        float m_TeamStartLocX[PVP_TEAM_COUNT];
+        float m_TeamStartLocY[PVP_TEAM_COUNT];
+        float m_TeamStartLocZ[PVP_TEAM_COUNT];
+        float m_TeamStartLocO[PVP_TEAM_COUNT];
+        float m_startMaxDist;
 };
 
 // helper functions for world state list fill

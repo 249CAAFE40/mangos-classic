@@ -54,8 +54,8 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     LOAD_OPVP_ZONE(SI);
     LOAD_OPVP_ZONE(EP);
 
-    sLog.outString();
     sLog.outString(">> Loaded %u Outdoor PvP zones", counter);
+    sLog.outString();
 }
 
 OutdoorPvP* OutdoorPvPMgr::GetScript(uint32 zoneId)
@@ -67,7 +67,7 @@ OutdoorPvP* OutdoorPvPMgr::GetScript(uint32 zoneId)
         case ZONE_ID_EASTERN_PLAGUELANDS:
             return m_scripts[OPVP_ID_EP];
         default:
-            return NULL;
+            return nullptr;
     }
 }
 
@@ -83,7 +83,7 @@ OutdoorPvP* OutdoorPvPMgr::GetScriptOfAffectedZone(uint32 zoneId)
         case ZONE_ID_SCHOLOMANCE:
             return m_scripts[OPVP_ID_EP];
         default:
-            return NULL;
+            return nullptr;
     }
 }
 

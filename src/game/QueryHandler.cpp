@@ -76,7 +76,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     uint32 lowguid      = fields[0].GetUInt32();
     std::string name = fields[1].GetCppString();
     uint8 pRace = 0, pGender = 0, pClass = 0;
-    if (name == "")
+    if (name.empty())
         name         = session->GetMangosString(LANG_NON_EXIST_CHARACTER);
     else
     {
@@ -128,7 +128,7 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
 
     Creature* unit = _player->GetMap()->GetAnyTypeCreature(guid);
 
-    // if (unit == NULL)
+    // if (unit == nullptr)
     //    sLog.outDebug( "WORLD: HandleCreatureQueryOpcode - (%u) NO SUCH UNIT! (GUID: %u, ENTRY: %u)", uint32(GUID_LOPART(guid)), guid, entry );
 
     CreatureInfo const* ci = ObjectMgr::GetCreatureTemplate(entry);
@@ -396,6 +396,6 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 void WorldSession::SendQueryTimeResponse()
 {
     WorldPacket data(SMSG_QUERY_TIME_RESPONSE, 4);
-    data << uint32(time(NULL));
+    data << uint32(time(nullptr));
     SendPacket(&data);
 }

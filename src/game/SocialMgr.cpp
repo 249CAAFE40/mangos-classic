@@ -119,15 +119,16 @@ void PlayerSocial::SendFriendList()
     {
         if (itr->second.Flags & SOCIAL_FLAG_FRIEND)         // if IsFriend()
         {
-            sSocialMgr.GetFriendInfo(plr, itr->first, itr->second);
+            FriendInfo& friendInfo = itr->second;
+            sSocialMgr.GetFriendInfo(plr, itr->first, friendInfo);
 
             data << ObjectGuid(HIGHGUID_PLAYER, itr->first);// player guid
             data << uint8(itr->second.Status);              // online/offline/etc?
             if (itr->second.Status)                         // if online
             {
-                data << uint32(itr->second.Area);           // player area
-                data << uint32(itr->second.Level);          // player level
-                data << uint32(itr->second.Class);          // player class
+                data << uint32(friendInfo.Area);           // player area
+                data << uint32(friendInfo.Level);          // player level
+                data << uint32(friendInfo.Class);          // player class
             }
         }
     }
@@ -197,7 +198,7 @@ void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo&
 
     PlayerSocialMap::iterator itr = player->GetSocial()->m_playerSocialMap.find(friend_lowguid);
     if (itr != player->GetSocial()->m_playerSocialMap.end())
-
+    {
         // PLAYER see his team only and PLAYER can't see MODERATOR, GAME MASTER, ADMINISTRATOR characters
         // MODERATOR, GAME MASTER, ADMINISTRATOR can see all
         if (pFriend && pFriend->GetName() &&
@@ -221,6 +222,7 @@ void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo&
             friendInfo.Level = 0;
             friendInfo.Class = 0;
         }
+    }
 }
 
 void SocialMgr::MakeFriendStatusPacket(FriendsResult result, uint32 guid, WorldPacket* data)

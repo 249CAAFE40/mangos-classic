@@ -43,7 +43,7 @@ DatabaseMysql::DatabaseMysql()
     if (db_count++ == 0)
     {
         // Mysql Library Init
-        mysql_library_init(-1, NULL, NULL);
+        mysql_library_init(-1, nullptr, nullptr);
 
         if (!mysql_thread_safe())
         {
@@ -76,7 +76,7 @@ MySQLConnection::~MySQLConnection()
 
 bool MySQLConnection::Initialize(const char* infoString)
 {
-    MYSQL* mysqlInit = mysql_init(NULL);
+    MYSQL* mysqlInit = mysql_init(nullptr);
     if (!mysqlInit)
     {
         sLog.outError("Could not initialize Mysql connection");
@@ -147,7 +147,7 @@ bool MySQLConnection::Initialize(const char* infoString)
 
     DETAIL_LOG("Connected to MySQL database %s@%s:%s/%s", user.c_str(), host.c_str(), port_or_socket.c_str(), database.c_str());
     sLog.outString("MySQL client library: %s", mysql_get_client_info());
-    sLog.outString("MySQL server ver: %s ", mysql_get_server_info( mMysql));
+    sLog.outString("MySQL server ver: %s ", mysql_get_server_info(mMysql));
 
     /*----------SET AUTOCOMMIT ON---------*/
     // It seems mysql 5.0.x have enabled this feature
@@ -211,13 +211,13 @@ bool MySQLConnection::_Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD**
 
 QueryResult* MySQLConnection::Query(const char* sql)
 {
-    MYSQL_RES* result = NULL;
-    MYSQL_FIELD* fields = NULL;
+    MYSQL_RES* result = nullptr;
+    MYSQL_FIELD* fields = nullptr;
     uint64 rowCount = 0;
     uint32 fieldCount = 0;
 
     if (!_Query(sql, &result, &fields, &rowCount, &fieldCount))
-        return NULL;
+        return nullptr;
 
     QueryResultMysql* queryResult = new QueryResultMysql(result, fields, rowCount, fieldCount);
 
@@ -227,13 +227,13 @@ QueryResult* MySQLConnection::Query(const char* sql)
 
 QueryNamedResult* MySQLConnection::QueryNamed(const char* sql)
 {
-    MYSQL_RES* result = NULL;
-    MYSQL_FIELD* fields = NULL;
+    MYSQL_RES* result = nullptr;
+    MYSQL_FIELD* fields = nullptr;
     uint64 rowCount = 0;
     uint32 fieldCount = 0;
 
     if (!_Query(sql, &result, &fields, &rowCount, &fieldCount))
-        return NULL;
+        return nullptr;
 
     QueryFieldNames names(fieldCount);
     for (uint32 i = 0; i < fieldCount; ++i)
@@ -316,7 +316,7 @@ SqlPreparedStatement* MySQLConnection::CreateStatement(const std::string& fmt)
 
 //////////////////////////////////////////////////////////////////////////
 MySqlPreparedStatement::MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL* mysql) : SqlPreparedStatement(fmt, conn),
-    m_pMySQLConn(mysql), m_stmt(NULL), m_pInputArgs(NULL), m_pResult(NULL), m_pResultMetadata(NULL)
+    m_pMySQLConn(mysql), m_stmt(nullptr), m_pInputArgs(nullptr), m_pResult(nullptr), m_pResultMetadata(nullptr)
 {
 }
 
@@ -450,10 +450,10 @@ void MySqlPreparedStatement::RemoveBinds()
     mysql_free_result(m_pResultMetadata);
     mysql_stmt_close(m_stmt);
 
-    m_stmt = NULL;
-    m_pResultMetadata = NULL;
-    m_pResult = NULL;
-    m_pInputArgs = NULL;
+    m_stmt = nullptr;
+    m_pResultMetadata = nullptr;
+    m_pResult = nullptr;
+    m_pInputArgs = nullptr;
 
     m_bPrepared = false;
 }
@@ -481,7 +481,7 @@ enum_field_types MySqlPreparedStatement::ToMySQLType(const SqlStmtFieldData& dat
     switch (data.type())
     {
         case FIELD_NONE:    dataType = MYSQL_TYPE_NULL;                     break;
-            // MySQL does not support MYSQL_TYPE_BIT as input type
+        // MySQL does not support MYSQL_TYPE_BIT as input type
         case FIELD_BOOL:    // dataType = MYSQL_TYPE_BIT;      bUnsigned = 1;  break;
         case FIELD_UI8:     dataType = MYSQL_TYPE_TINY;     bUnsigned = 1;  break;
         case FIELD_I8:      dataType = MYSQL_TYPE_TINY;                     break;

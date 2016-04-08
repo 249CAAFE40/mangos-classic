@@ -140,7 +140,7 @@ class MANGOS_DLL_SPEC ObjectGuid
             switch (high)
             {
                 case HIGHGUID_ITEM:         return TYPEID_ITEM;
-                    // case HIGHGUID_CONTAINER:    return TYPEID_CONTAINER; HIGHGUID_CONTAINER==HIGHGUID_ITEM currently
+                // case HIGHGUID_CONTAINER:    return TYPEID_CONTAINER; HIGHGUID_CONTAINER==HIGHGUID_ITEM currently
                 case HIGHGUID_UNIT:         return TYPEID_UNIT;
                 case HIGHGUID_PET:          return TYPEID_UNIT;
                 case HIGHGUID_PLAYER:       return TYPEID_PLAYER;
@@ -148,7 +148,7 @@ class MANGOS_DLL_SPEC ObjectGuid
                 case HIGHGUID_DYNAMICOBJECT: return TYPEID_DYNAMICOBJECT;
                 case HIGHGUID_CORPSE:       return TYPEID_CORPSE;
                 case HIGHGUID_MO_TRANSPORT: return TYPEID_GAMEOBJECT;
-                    // unknown
+                // unknown
                 default:                    return TYPEID_OBJECT;
             }
         }
@@ -244,19 +244,17 @@ ByteBuffer& operator>> (ByteBuffer& buf, PackedGuidReader const& guid);
 
 inline PackedGuid ObjectGuid::WriteAsPacked() const { return PackedGuid(*this); }
 
-HASH_NAMESPACE_START
-
-template<>
-class hash<ObjectGuid>
-{
+namespace std {
+    template<>
+    class hash<ObjectGuid>
+    {
     public:
 
         size_t operator()(ObjectGuid const& key) const
         {
             return hash<uint64>()(key.GetRawValue());
         }
-};
-
-HASH_NAMESPACE_END
+    };
+}
 
 #endif

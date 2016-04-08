@@ -22,14 +22,14 @@
 #include "SocialMgr.h"
 #include "Chat.h"
 
-Channel::Channel(const std::string& name, uint32 channel_id)
-    : m_announce(true), m_moderate(false), m_name(name), m_flags(0), m_channelId(channel_id)
+Channel::Channel(const std::string& name)
+    : m_announce(true), m_moderate(false), m_name(name), m_flags(0), m_channelId(0)
 {
     // set special flags if built-in channel
-    ChatChannelsEntry const* ch = GetChannelEntryFor(channel_id);
+    ChatChannelsEntry const* ch = GetChannelEntryFor(name);
     if (ch)                                                 // it's built-in channel
     {
-        channel_id = ch->ChannelID;                         // built-in channel
+        m_channelId = ch->ChannelID;                        // only built-in channel have channel id != 0
         m_announce = false;                                 // no join/leave announces
 
         m_flags |= CHANNEL_FLAG_GENERAL;                    // for all built-in channels
@@ -558,7 +558,9 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         return;
     }
 
-    if (m_players[guid].IsMuted())
+    if (m_players[guid].IsMuted() ||
+            (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && player->GetHonorRankInfo().visualRank < SPEAK_IN_LOCALDEFENSE_RANK) ||
+            (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && player->GetHonorRankInfo().visualRank < SPEAK_IN_WORLDDEFENSE_RANK))
     {
         WorldPacket data;
         MakeMuted(&data);
@@ -578,7 +580,7 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
         lang = LANG_UNIVERSAL;
     WorldPacket data;
-    ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, text, Language(lang), player->GetChatTag(), guid, player->GetName(), ObjectGuid(), "", m_name.c_str());
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, text, Language(lang), player->GetChatTag(), guid, player->GetName(), ObjectGuid(), "", m_name.c_str(), player->GetHonorRankInfo().rank);
     SendToAll(&data, !m_players[guid].IsModerator() ? guid : ObjectGuid());
 }
 

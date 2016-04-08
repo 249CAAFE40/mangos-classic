@@ -56,7 +56,7 @@ namespace VMAP
     TileAssembler::TileAssembler(const std::string& pSrcDirName, const std::string& pDestDirName)
     {
         iCurrentUniqueNameId = 0;
-        iFilterMethod = NULL;
+        iFilterMethod = nullptr;
         iSrcDir = pSrcDirName;
         iDestDir = pDestDirName;
         // mkdir(iDestDir);
@@ -229,7 +229,7 @@ namespace VMAP
             MapData::iterator map_iter = mapData.find(mapID);
             if (map_iter == mapData.end())
             {
-                printf("spawning Map %d\n", mapID);
+                printf("spawning Map %u\n", mapID);
                 mapData[mapID] = current = new MapSpawns();
             }
             else current = (*map_iter).second;
